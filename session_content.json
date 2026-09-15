@@ -1,0 +1,132 @@
+{
+  "environments": {
+    "E1": "Quiet room",
+    "E2": "Canteen",
+    "E3": "Quiet outdoors",
+    "E4": "Busy outdoors",
+    "E5": "Corridor",
+    "E6": "Car"
+  },
+  "female": {
+    "volunteer_ids": {"prefix": "F", "min": 1, "max": 75},
+    "clips": 20,
+    "approx_time": "~10 minutes",
+    "sections": [
+      {
+        "class": "D",
+        "title": "Distress",
+        "instruction": "Say each word twice: once mild, once urgent. Let the second time sound noticeably more urgent than the first.",
+        "items": [
+          {"word": "Bachao", "meaning": "Save me / Help", "code": "BCH", "takes": [
+            {"code": "R01", "label": "Take 1 (Mild)", "intensity": "Mild", "direction": "Calm, slightly worried"},
+            {"code": "R02", "label": "Take 2 (Urgent)", "intensity": "Urgent", "direction": "Louder, clearly urgent"}
+          ]},
+          {"word": "Madad karo", "meaning": "Help me", "code": "MAD", "takes": [
+            {"code": "R01", "label": "Take 1 (Mild)", "intensity": "Mild", "direction": "Calm, slightly worried"},
+            {"code": "R02", "label": "Take 2 (Urgent)", "intensity": "Urgent", "direction": "Louder, clearly urgent"}
+          ]},
+          {"word": "Choro mujhe", "meaning": "Let go of me", "code": "CHM", "takes": [
+            {"code": "R01", "label": "Take 1 (Mild)", "intensity": "Mild", "direction": "Calm, slightly worried"},
+            {"code": "R02", "label": "Take 2 (Urgent)", "intensity": "Urgent", "direction": "Louder, clearly urgent"}
+          ]},
+          {"word": "Help", "meaning": "Help (English word)", "code": "HLP", "takes": [
+            {"code": "R01", "label": "Take 1 (Mild)", "intensity": "Mild", "direction": "Calm, slightly worried"},
+            {"code": "R02", "label": "Take 2 (Urgent)", "intensity": "Urgent", "direction": "Louder, clearly urgent"}
+          ]}
+        ]
+      },
+      {
+        "class": "A",
+        "title": "Stern / Aggressive Lines",
+        "instruction": "Read each line once. Sound firm and cold. Lines marked High should be said louder and faster.",
+        "items": [
+          {"word": "Chup ho jao, warna theek nahi hoga", "meaning": "Be quiet, or it will not go well", "code": "L01", "loudness": "Medium", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Tumhe pata nahi main kya kar sakta hoon", "meaning": "You do not know what I can do", "code": "L02", "loudness": "High", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Shor mat karo", "meaning": "Do not make noise", "code": "L03", "loudness": "Medium", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Ab bhaagne ki koshish mat karna", "meaning": "Do not try to run now", "code": "L04", "loudness": "High", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Jo kaha hai wohi karo", "meaning": "Just do what I said", "code": "L05", "loudness": "Medium", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Yeh aakhri baar keh raha hoon", "meaning": "I am saying this for the last time", "code": "L06", "loudness": "High", "takes": [{"code": "R01", "label": "Take 1"}]}
+        ]
+      },
+      {
+        "class": "N",
+        "title": "Everyday Talking",
+        "instruction": "Ask the question. Let the volunteer answer in their own words for about 5 to 7 seconds. Do not make them read a script for this part.",
+        "items": [
+          {"word": "Aap ka aaj ka din kaisa guzra?", "code": "Q01", "prompt": "Aap ka aaj ka din kaisa guzra?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aap ki class kis waqt hai?", "code": "Q02", "prompt": "Aap ki class kis waqt hai?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aap ko khaane mein kya pasand hai?", "code": "Q03", "prompt": "Aap ko khaane mein kya pasand hai?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aaj mausam kaisa hai?", "code": "Q04", "prompt": "Aaj mausam kaisa hai?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aap university kaise aate hain?", "code": "Q05", "prompt": "Aap university kaise aate hain?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Fursat mein aap kya karna pasand karte hain?", "code": "Q06", "prompt": "Fursat mein aap kya karna pasand karte hain?", "takes": [{"code": "R01", "label": "Take 1"}]}
+        ]
+      }
+    ]
+  },
+  "male": {
+    "volunteer_ids": {"prefix": "M", "min": 1, "max": 20},
+    "clips": 30,
+    "approx_time": "~15 minutes",
+    "sections": [
+      {
+        "class": "D",
+        "title": "Distress",
+        "instruction": "Say each word three times. Each time, sound a little more urgent than the last time.",
+        "items": [
+          {"word": "Bachao", "meaning": "Save me / Help", "code": "BCH", "takes": [
+            {"code": "R01", "label": "Take 1 (Mild)", "intensity": "Mild", "direction": "Calm, slightly worried"},
+            {"code": "R02", "label": "Take 2 (Urgent)", "intensity": "Urgent", "direction": "Louder, clearly urgent"},
+            {"code": "R03", "label": "Take 3 (High urgency)", "intensity": "High urgency", "direction": "Loud, fast, strong urgency"}
+          ]},
+          {"word": "Madad karo", "meaning": "Help me", "code": "MAD", "takes": [
+            {"code": "R01", "label": "Take 1 (Mild)", "intensity": "Mild", "direction": "Calm, slightly worried"},
+            {"code": "R02", "label": "Take 2 (Urgent)", "intensity": "Urgent", "direction": "Louder, clearly urgent"},
+            {"code": "R03", "label": "Take 3 (High urgency)", "intensity": "High urgency", "direction": "Loud, fast, strong urgency"}
+          ]},
+          {"word": "Choro mujhe", "meaning": "Let go of me", "code": "CHM", "takes": [
+            {"code": "R01", "label": "Take 1 (Mild)", "intensity": "Mild", "direction": "Calm, slightly worried"},
+            {"code": "R02", "label": "Take 2 (Urgent)", "intensity": "Urgent", "direction": "Louder, clearly urgent"},
+            {"code": "R03", "label": "Take 3 (High urgency)", "intensity": "High urgency", "direction": "Loud, fast, strong urgency"}
+          ]},
+          {"word": "Help", "meaning": "Help (English word)", "code": "HLP", "takes": [
+            {"code": "R01", "label": "Take 1 (Mild)", "intensity": "Mild", "direction": "Calm, slightly worried"},
+            {"code": "R02", "label": "Take 2 (Urgent)", "intensity": "Urgent", "direction": "Louder, clearly urgent"},
+            {"code": "R03", "label": "Take 3 (High urgency)", "intensity": "High urgency", "direction": "Loud, fast, strong urgency"}
+          ]}
+        ]
+      },
+      {
+        "class": "A",
+        "title": "Stern / Aggressive Lines",
+        "instruction": "Read each line once. Sound firm and cold. For lines marked High, say it louder and faster.",
+        "items": [
+          {"word": "Chup ho jao, warna theek nahi hoga", "meaning": "Be quiet, or it will not go well", "code": "L01", "loudness": "Medium", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Zyada mat bolo, chalo mere sath", "meaning": "Do not talk back, come with me", "code": "L02", "loudness": "Medium", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Tumhe pata nahi main kya kar sakta hoon", "meaning": "You do not know what I can do", "code": "L03", "loudness": "High", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Shor mat karo", "meaning": "Do not make noise", "code": "L04", "loudness": "Medium", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Ab bhaagne ki koshish mat karna", "meaning": "Do not try to run now", "code": "L05", "loudness": "High", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Khabardar, ek qadam bhi mat uthana", "meaning": "Careful, do not take a single step", "code": "L06", "loudness": "High", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Jo kaha hai wohi karo", "meaning": "Just do what I said", "code": "L07", "loudness": "Medium", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Tumhe samajh nahi aa rahi?", "meaning": "Do you not understand?", "code": "L08", "loudness": "Medium", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Yeh aakhri baar keh raha hoon", "meaning": "I am saying this for the last time", "code": "L09", "loudness": "High", "takes": [{"code": "R01", "label": "Take 1"}]}
+        ]
+      },
+      {
+        "class": "N",
+        "title": "Everyday Talking",
+        "instruction": "Ask the question. Let the volunteer answer in their own words for about 5 to 7 seconds. Do not make them read a script for this part.",
+        "items": [
+          {"word": "Aap ka aaj ka din kaisa guzra?", "code": "Q01", "prompt": "Aap ka aaj ka din kaisa guzra?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aap ki class kis waqt hai?", "code": "Q02", "prompt": "Aap ki class kis waqt hai?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aap ko khaane mein kya pasand hai?", "code": "Q03", "prompt": "Aap ko khaane mein kya pasand hai?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aaj mausam kaisa hai?", "code": "Q04", "prompt": "Aaj mausam kaisa hai?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aap ne pichle hafte kya kharida?", "code": "Q05", "prompt": "Aap ne pichle hafte kya kharida?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aap university kaise aate hain?", "code": "Q06", "prompt": "Aap university kaise aate hain?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aap apne doston ke sath kya karte hain?", "code": "Q07", "prompt": "Aap apne doston ke sath kya karte hain?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Aap ka favourite subject kya hai?", "code": "Q08", "prompt": "Aap ka favourite subject kya hai?", "takes": [{"code": "R01", "label": "Take 1"}]},
+          {"word": "Fursat mein aap kya karna pasand karte hain?", "code": "Q09", "prompt": "Fursat mein aap kya karna pasand karte hain?", "takes": [{"code": "R01", "label": "Take 1"}]}
+        ]
+      }
+    ]
+  }
+}
