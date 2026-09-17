@@ -12,6 +12,12 @@ export async function getSessionContent() {
   return response.json();
 }
 
+export async function getNextParticipantId(gender) {
+  const response = await fetch(`${API}/api/next-participant-id?gender=${encodeURIComponent(gender)}`);
+  if (!response.ok) throw new Error("Unable to fetch next participant ID.");
+  return response.json();
+}
+
 export async function uploadRecording(item, onProgress) {
   const body = new FormData();
   Object.entries(item.metadata).forEach(([key, value]) => body.append(key, String(value)));

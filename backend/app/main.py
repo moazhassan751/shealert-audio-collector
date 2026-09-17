@@ -4,11 +4,13 @@ import json
 import logging
 import secrets
 import shutil
+import time
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
 from .google_services import GoogleDriveStore, GoogleSheetStore
@@ -48,12 +50,16 @@ tokens: set[str] = set()
 
 drive = None
 sheets = None
-if settings.google_service_account_json and settings.google_drive_root_folder_id:
+credentials_json = None
+if settings.google_drive_root_folder_id:
     try:
-        drive = GoogleDriveStore(settings.google_service_account_json, settings.google_drive_root_folder_id,
+        credentials_json = settings.google_credentials_json
+        if not credentials_json:
+            raise RuntimeError("Google service-account credentials are not configured")
+        drive = GoogleDriveStore(credentials_json, settings.google_drive_root_folder_id,
                                  settings.google_drive_shared_drive_id)
         if settings.google_sheet_id:
-            sheets = GoogleSheetStore(settings.google_service_account_json, settings.google_sheet_id)
+            sheets = GoogleSheetStore(credentials_json, settings.google_sheet_id)
         logger.info("Google Drive integration enabled")
     except Exception:
         logger.exception("Google integration disabled; local storage remains active")
@@ -81,6 +87,48 @@ def get_phrases() -> list[dict]:
 @app.get("/api/session-content")
 def get_session_content() -> dict:
     return session_content
+
+
+active_reservations: dict[str, float] = {}
+
+
+@app.get("/api/next-participant-id")
+def get_next_participant_id(gender: str) -> dict:
+    gender = gender.lower()
+    if gender not in {"female", "male", "unspecified"}:
+        raise HTTPException(status_code=400, detail="Invalid gender")
+    prefix = {"female": "F", "male": "M", "unspecified": "U"}[gender]
+    max_num = {"female": 75, "male": 20, "unspecified": 99}[gender]
+
+    now = time.time()
+    for pid in list(active_reservations.keys()):
+        if active_reservations[pid] < now:
+            del active_reservations[pid]
+
+    records = store.list_records()
+    used_ids: set[str] = set()
+    for rec in records:
+        pid = (rec.get("participant_id") or "").strip().upper()
+        if pid:
+            used_ids.add(pid)
+            if pid.startswith(prefix) and pid[1:].isdigit():
+                used_ids.add(f"{prefix}{int(pid[1:]):02d}")
+                used_ids.add(f"{prefix}{int(pid[1:]):03d}")
+
+    reserved_set = set(active_reservations.keys())
+
+    for num in range(1, max_num + 1):
+        formatted_id = f"{prefix}{num:02d}"
+        if formatted_id not in used_ids and formatted_id not in reserved_set:
+            active_reservations[formatted_id] = now + (30 * 60)
+            return {"participant_id": formatted_id, "available": True}
+
+    for num in range(1, max_num + 1):
+        formatted_id = f"{prefix}{num:02d}"
+        if formatted_id not in used_ids:
+            return {"participant_id": formatted_id, "available": True}
+
+    return {"participant_id": f"{prefix}{max_num:02d}", "available": False, "message": "All slots are filled"}
 
 
 @app.post("/api/admin/login")
@@ -159,7 +207,13 @@ async def upload_recording(
     content_gender = "male" if fields.gender_category.value == "male" else "female"
     expected = phrase_lookup.get((content_gender, fields.phrase_id, fields.take_code, fields.section_class))
     if not expected:
-        raise HTTPException(status_code=422, detail="The item and take do not match this volunteer's session.")
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "The item and take do not match this volunteer's session. "
+                f"Received {content_gender}/{fields.phrase_id}/{fields.take_code}/{fields.section_class}."
+            ),
+        )
     if fields.phrase_text != expected["text_urdu"] or fields.category != expected["category"]:
         raise HTTPException(status_code=422, detail="The submitted script text does not match the source-of-truth session.")
     fields.environment_name = environments[fields.environment]
@@ -167,13 +221,19 @@ async def upload_recording(
     fields.intensity = expected["intensity"]
     fields.loudness = expected["loudness"]
     allowed_types = {"audio/webm", "audio/ogg", "audio/wav", "audio/x-wav", "audio/mp4", "application/octet-stream"}
-    if audio.content_type and audio.content_type.lower() not in allowed_types:
+    content_type = (audio.content_type or "").lower().split(";", 1)[0].strip()
+    if content_type and content_type not in allowed_types:
         raise HTTPException(status_code=415, detail="Unsupported audio file type")
     existing = store.get(fields.recording_id)
     if existing and existing.get("upload_status") == "COMPLETED":
-        return RecordingResult(recording_id=fields.recording_id, status="COMPLETED",
-                               message="This recording was already uploaded.", **{key: existing.get(key) for key in (
-                                   "original_filename", "standardized_filename", "google_drive_file_id")})
+        return RecordingResult(
+            recording_id=fields.recording_id,
+            status="COMPLETED",
+            message="This recording was already uploaded.",
+            original_filename=existing.get("original_filename"),
+            standardized_filename=existing.get("standardized_filename"),
+            drive_file_id=existing.get("google_drive_file_id") or None,
+        )
     suffix = ".wav" if "wav" in (audio.content_type or "").lower() else (".ogg" if "ogg" in (audio.content_type or "").lower() else ".webm")
     if (audio.filename or "").lower().endswith(".wav") or "wav" in (audio.content_type or ""):
         suffix = ".wav"
@@ -202,3 +262,17 @@ async def upload_recording(
             failed = settings.temp_root.resolve() / f"{fields.recording_id}.failed{suffix}"
             shutil.move(str(temporary), str(failed))
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if (frontend_dist / "index.html").exists():
+    if (frontend_dist / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=frontend_dist / "assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        file_path = frontend_dist / full_path
+        if full_path and file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(frontend_dist / "index.html")
+

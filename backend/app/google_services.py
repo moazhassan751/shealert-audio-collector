@@ -11,18 +11,35 @@ class GoogleDriveStore:
         from googleapiclient.http import MediaFileUpload
 
         info = json.loads(credentials_json)
-        credentials = service_account.Credentials.from_service_account_info(
-            info, scopes=["https://www.googleapis.com/auth/drive"]
-        )
+        if info.get("type") == "service_account":
+            credentials = service_account.Credentials.from_service_account_info(
+                info, scopes=["https://www.googleapis.com/auth/drive"]
+            )
+        else:
+            from google.oauth2.credentials import Credentials
+            from google.auth.transport.requests import Request
+            credentials = Credentials.from_authorized_user_info(
+                info, scopes=["https://www.googleapis.com/auth/drive"]
+            )
+            if credentials.expired and credentials.refresh_token:
+                credentials.refresh(Request())
         self.service = build("drive", "v3", credentials=credentials, cache_discovery=False)
         self.root = root_folder_id
         self.shared_drive_id = shared_drive_id
         self.media_type = MediaFileUpload
 
+    def _list_params(self) -> dict[str, Any]:
+        params: dict[str, Any] = {
+            "supportsAllDrives": True,
+            "includeItemsFromAllDrives": True,
+        }
+        if self.shared_drive_id:
+            params.update({"corpora": "drive", "driveId": self.shared_drive_id})
+        return params
+
     def _folder(self, name: str, parent: str) -> str:
         query = f"name = '{name}' and '{parent}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
-        result = self.service.files().list(q=query, fields="files(id,name)", supportsAllDrives=True,
-                                            includeItemsFromAllDrives=True).execute()
+        result = self.service.files().list(q=query, fields="files(id,name)", **self._list_params()).execute()
         if result.get("files"):
             return result["files"][0]["id"]
         body = {"name": name, "mimeType": "application/vnd.google-apps.folder", "parents": [parent]}
@@ -32,8 +49,7 @@ class GoogleDriveStore:
         area = self._folder("originals" if originals else "audio", self.root)
         folder = self._folder(bucket, area)
         query = f"name = '{name}' and '{folder}' in parents and trashed = false"
-        existing = self.service.files().list(q=query, fields="files(id,size)", supportsAllDrives=True,
-                                              includeItemsFromAllDrives=True).execute().get("files", [])
+        existing = self.service.files().list(q=query, fields="files(id,size)", **self._list_params()).execute().get("files", [])
         if existing:
             return existing[0]["id"]
         media = self.media_type(str(path), resumable=True)
@@ -53,9 +69,18 @@ class GoogleSheetStore:
         from googleapiclient.discovery import build
 
         info = json.loads(credentials_json)
-        credentials = service_account.Credentials.from_service_account_info(
-            info, scopes=["https://www.googleapis.com/auth/spreadsheets"]
-        )
+        if info.get("type") == "service_account":
+            credentials = service_account.Credentials.from_service_account_info(
+                info, scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+        else:
+            from google.oauth2.credentials import Credentials
+            from google.auth.transport.requests import Request
+            credentials = Credentials.from_authorized_user_info(
+                info, scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+            if credentials.expired and credentials.refresh_token:
+                credentials.refresh(Request())
         self.service = build("sheets", "v4", credentials=credentials, cache_discovery=False)
         self.sheet_id = sheet_id
 

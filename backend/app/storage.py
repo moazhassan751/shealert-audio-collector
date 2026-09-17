@@ -141,14 +141,33 @@ class DatasetStore:
                 })
                 drive_file_id = None
                 folder_path = f"audio/{bucket}"
+                drive_error = None
                 if self.drive:
-                    drive_file_id = self.drive.upload_verified(standardized_path, standardized_name, bucket)
-                    self.drive.upload_verified(original_path, original_name, bucket, originals=True)
-                    folder_path = f"SheAlert_Dataset/audio/{bucket}"
-                record.update({"google_drive_file_id": drive_file_id or "", "google_drive_folder_path": folder_path, "upload_status": "UPLOADED"})
+                    try:
+                        drive_file_id = self.drive.upload_verified(standardized_path, standardized_name, bucket)
+                        self.drive.upload_verified(original_path, original_name, bucket, originals=True)
+                        folder_path = f"SheAlert_Dataset/audio/{bucket}"
+                    except Exception as drive_exc:
+                        drive_error = str(drive_exc)
+                        if getattr(self.settings, "google_drive_required", False):
+                            raise
+                        logger.warning(
+                            "Drive upload skipped/failed for recording_id=%s: %s. Local audio is safely stored.",
+                            fields.recording_id, drive_exc
+                        )
+                record.update({
+                    "google_drive_file_id": drive_file_id or "",
+                    "google_drive_folder_path": folder_path,
+                    "upload_status": "UPLOADED" if drive_file_id else ("SAVED_LOCAL_DRIVE_PENDING" if drive_error else "SAVED_LOCAL"),
+                })
+                if drive_error:
+                    record["drive_error"] = drive_error[:500]
                 self._upsert_csv(record)
-                if self.sheets:
-                    self.sheets.append(record)
+                if self.sheets and not drive_error:
+                    try:
+                        self.sheets.append(record)
+                    except Exception as sheet_exc:
+                        logger.warning("Sheet append failed: %s", sheet_exc)
                 record["upload_status"] = "COMPLETED"
                 records[fields.recording_id] = record
                 self._write_registry(records)

@@ -13,3 +13,6 @@ backend/temp/*
 !backend/temp/.gitkeep
 *.log
 .DS_Store
+google_token.json
+client_secret*.json
+*.tmp

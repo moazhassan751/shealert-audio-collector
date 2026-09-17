@@ -1,0 +1,10 @@
+.git
+.venv
+frontend/node_modules
+frontend/dist
+backend/dataset
+backend/temp
+backend/data/records.json
+.pytest_cache
+tests
+*.log

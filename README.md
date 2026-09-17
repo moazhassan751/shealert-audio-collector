@@ -40,7 +40,7 @@ Open `http://localhost:5173`. The Vite proxy sends `/api` to port 8000. Micropho
 1. Create a Google Cloud project and enable Google Drive API; enable Sheets API if metadata mirroring is wanted.
 2. Create a service account and download its JSON key **outside this repository**.
 3. Create a private `SheAlert_Dataset` Drive folder, share it with the service-account email as Editor, and copy its folder ID.
-4. Set `GOOGLE_SERVICE_ACCOUNT_JSON` to the JSON contents (use a deployment secret, never source control), and set `GOOGLE_DRIVE_ROOT_FOLDER_ID`.
+4. Set `GOOGLE_SERVICE_ACCOUNT_FILE` to the downloaded JSON key path (outside this repository) and set `GOOGLE_DRIVE_ROOT_FOLDER_ID`. For deployment secret managers, `GOOGLE_SERVICE_ACCOUNT_JSON` may be used instead.
 5. The server creates `audio/female`, `audio/male`, `audio/unspecified` and matching `originals` folders on first upload.
 6. For Sheets, create a private sheet, share it with the service account, set `GOOGLE_SHEET_ID`, and add the metadata headers in the order shown in `backend/app/storage.py`.
 7. Restart the backend and test one upload in each category. Verify both Drive file ID and `gender_category` in metadata.
