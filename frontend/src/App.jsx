@@ -323,6 +323,16 @@ function ParticipantForm({ participant, setParticipant, onContinue, pending, onR
   );
 }
 
+let sharedAudioContext = null;
+function getSharedAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!sharedAudioContext || sharedAudioContext.state === "closed") {
+    sharedAudioContext = new AudioContextClass();
+  }
+  return sharedAudioContext;
+}
+
 function Recorder({ item, participant, filename, localOnly = false, onSuccess }) {
   const [status, setStatus] = useState("idle");
   const [seconds, setSeconds] = useState(0);
@@ -353,7 +363,7 @@ function Recorder({ item, participant, filename, localOnly = false, onSuccess })
     }
   };
 
-  const closeAudioContext = () => {
+  const disconnectAudioNodes = () => {
     if (sourceNodeRef.current) {
       try { sourceNodeRef.current.disconnect(); } catch {}
       sourceNodeRef.current = null;
@@ -361,10 +371,6 @@ function Recorder({ item, participant, filename, localOnly = false, onSuccess })
     if (analyserRef.current) {
       try { analyserRef.current.disconnect(); } catch {}
       analyserRef.current = null;
-    }
-    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-      try { audioContextRef.current.close(); } catch {}
-      audioContextRef.current = null;
     }
   };
 
@@ -391,14 +397,14 @@ function Recorder({ item, participant, filename, localOnly = false, onSuccess })
       return;
     }
     try {
-      closeAudioContext();
+      disconnectAudioNodes();
       let stream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
-            echoCancellation: true,
+            echoCancellation: false,
             noiseSuppression: false,
-            autoGainControl: true,
+            autoGainControl: false,
           }
         });
       } catch {
@@ -408,20 +414,21 @@ function Recorder({ item, participant, filename, localOnly = false, onSuccess })
       peakRef.current = 0;
       setQuietWarning(false);
 
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      const context = new AudioContextClass();
-      if (context.state === "suspended") {
-        await context.resume();
-      }
-      audioContextRef.current = context;
+      const context = getSharedAudioContext();
+      if (context) {
+        if (context.state === "suspended") {
+          await context.resume();
+        }
+        audioContextRef.current = context;
 
-      const source = context.createMediaStreamSource(stream);
-      sourceNodeRef.current = source;
-      const analyser = context.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      analyserRef.current = analyser;
-      watchLevel();
+        const source = context.createMediaStreamSource(stream);
+        sourceNodeRef.current = source;
+        const analyser = context.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        analyserRef.current = analyser;
+        watchLevel();
+      }
 
       const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((candidate) =>
         MediaRecorder.isTypeSupported(candidate)
@@ -439,11 +446,13 @@ function Recorder({ item, participant, filename, localOnly = false, onSuccess })
       recorder.onstop = () => {
         const audioBlob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
         setBlob(audioBlob);
-        setQuietWarning(peakRef.current < 3);
+        // Only warn if the volume level was truly non-existent (peak == 0 and tiny blob indicating no signal)
+        const isSuspiciouslyQuiet = peakRef.current === 0 && audioBlob.size < 4000;
+        setQuietWarning(isSuspiciouslyQuiet);
         setStatus("ready");
         stopTracks();
         cancelAnimationFrame(animationRef.current);
-        closeAudioContext();
+        disconnectAudioNodes();
         setLevel(0);
       };
 
@@ -577,7 +586,7 @@ function Recorder({ item, participant, filename, localOnly = false, onSuccess })
       clearInterval(timerRef.current);
       cancelAnimationFrame(animationRef.current);
       stopTracks();
-      closeAudioContext();
+      disconnectAudioNodes();
     };
   }, []);
 
