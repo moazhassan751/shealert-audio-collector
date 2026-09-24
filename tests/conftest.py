@@ -79,6 +79,9 @@ def isolated_store(tmp_path, monkeypatch):
         temp_root=temp_dir,
         min_duration_seconds=1.0,
         google_drive_required=False,
+        starting_female_id=1,
+        starting_male_id=1,
+        starting_unspecified_id=1,
     )
 
     store = DatasetStore(test_settings, drive=None, sheets=None)

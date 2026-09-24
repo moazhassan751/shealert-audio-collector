@@ -1,9 +1,42 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, CheckCircle2, ChevronRight, Download, Loader2, Mic, Play, RefreshCw, ShieldCheck, Square, UploadCloud, Waves } from "lucide-react";
+import {
+  BarChart3,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  ExternalLink,
+  Heart,
+  HelpCircle,
+  Info,
+  Instagram,
+  Loader2,
+  Lock,
+  Mail,
+  Mic,
+  Play,
+  RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Square,
+  UploadCloud,
+  Users,
+  Volume2,
+  Waves
+} from "lucide-react";
 import { adminFetch, adminLogin, getHealth, getNextParticipantId, getSessionContent, uploadRecording } from "./api";
 import { getPending, removePending, saveLocalTest, savePending } from "./db";
 
-const initialParticipant = { participant_id: "", age_group: "18-25", gender_category: "", native_language: "Urdu", environment: "E1", consent: false };
+const initialParticipant = {
+  participant_id: "",
+  age_group: "18-25",
+  gender_category: "",
+  native_language: "Urdu",
+  environment: "E1",
+  consent: false
+};
+
 const genderLabels = { female: "Female", male: "Male", unspecified: "Prefer not to say / Other" };
 const classLabels = { D: "Distress", A: "Stern / Aggressive Lines", N: "Everyday Talking" };
 
@@ -16,52 +49,132 @@ function isValidParticipantId(value, gender) {
   return gender === "female" ? number >= 1 && number <= 75 : gender === "male" ? number >= 1 && number <= 20 : number >= 1 && number <= 99;
 }
 
-function Header({ onAdmin, health }) {
-  const isDriveConnected = health?.google_drive_connected;
+export function InstagramPill({ className = "", compact = false }) {
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-teal p-2 text-white">
-            <Waves size={22} />
+    <a
+      href="https://www.instagram.com/shealertai"
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`group relative inline-flex items-center gap-2.5 rounded-full text-white font-bold tracking-wide shadow-md transition-all duration-200 hover:scale-[1.03] hover:shadow-xl active:scale-[0.98] ${
+        compact ? "px-4 py-2 text-xs" : "px-5 py-2.5 text-xs sm:text-sm"
+      } ${className}`}
+      style={{
+        background: "linear-gradient(90deg, #3b1262 0%, #85166f 55%, #e62872 100%)",
+        boxShadow: "0 4px 14px rgba(133, 22, 111, 0.35)"
+      }}
+      title="Follow @shealertai on Instagram"
+    >
+      <Instagram size={compact ? 16 : 18} className="shrink-0 transition-transform duration-200 group-hover:rotate-6 text-white" strokeWidth={2.2} />
+      <span className="font-semibold uppercase tracking-wider">FOLLOW @shealertai</span>
+    </a>
+  );
+}
+
+export function ContactSupportBanner() {
+  return (
+    <div className="rounded-2xl border border-purple-200/70 bg-gradient-to-r from-purple-50/90 via-pink-50/60 to-purple-50/80 p-4 sm:p-5 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className="rounded-xl bg-gradient-to-br from-brand-indigo via-brand-purple to-brand-pink p-2.5 text-white shadow-sm shrink-0 mt-0.5">
+            <Mail size={18} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-bold tracking-tight">SheAlert</p>
-              {health && (
-                <span
-                  title={isDriveConnected ? "Google Drive auto-sync is active" : "Recordings are stored safely on the server"}
-                  className={`hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    isDriveConnected
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      : "bg-amber-50 text-amber-700 border border-amber-200"
-                  }`}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${isDriveConnected ? "bg-emerald-500" : "bg-amber-500"}`} />
-                  {isDriveConnected ? "Drive Connected" : "Local Server Mode"}
-                </span>
-              )}
+              <span className="text-xs font-extrabold uppercase tracking-wider text-brand-purple">Have Questions or Queries?</span>
+              <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-bold text-brand-pink">24/7 Support</span>
             </div>
-            <p className="text-xs text-slate-500">Audio research collection</p>
+            <p className="mt-1 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed">
+              Email us at{" "}
+              <a href="mailto:shealertai@gmail.com" className="font-bold text-brand-pink hover:underline">
+                shealertai@gmail.com
+              </a>{" "}
+              or DM us on Instagram{" "}
+              <a href="https://www.instagram.com/shealertai" target="_blank" rel="noopener noreferrer" className="font-bold text-brand-purple hover:underline">
+                @shealertai
+              </a>
+            </p>
           </div>
         </div>
-        <button onClick={onAdmin} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100">
-          Researcher dashboard
-        </button>
+        <div className="shrink-0 flex items-center gap-2 sm:self-center">
+          <InstagramPill compact />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Header({ onAdmin, health }) {
+  const isDriveConnected = health?.google_drive_connected;
+  return (
+    <header className="sticky top-0 z-30 border-b border-purple-100/90 bg-white/95 backdrop-blur-md transition-all shadow-[0_1px_3px_rgba(43,17,84,0.05)]">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-3">
+          <a href="/" className="group flex items-center gap-3 focus:outline-none">
+            <div className="relative flex items-center justify-center">
+              <img
+                src="/logo.png"
+                alt="SheAlert Logo"
+                className="h-10 w-10 sm:h-11 sm:w-11 object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
+              />
+              <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-pink opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-pink"></span>
+              </span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-[#2b1154] via-[#7c1a6e] to-[#e11d74] bg-clip-text text-transparent">
+                  SheAlert
+                </span>
+                {health && (
+                  <span
+                    title={isDriveConnected ? "Google Drive auto-sync is active" : "Recordings are stored safely on the server"}
+                    className={`hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      isDriveConnected
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : "bg-amber-50 text-amber-700 border border-amber-200"
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${isDriveConnected ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    {isDriveConnected ? "Drive Connected" : "Local Server Mode"}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium">Urdu Audio Dataset Collection</p>
+            </div>
+          </a>
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden md:block">
+            <InstagramPill compact />
+          </div>
+          <button
+            onClick={onAdmin}
+            className="rounded-xl border border-purple-200/80 bg-purple-50/50 px-3.5 py-2 text-xs sm:text-sm font-semibold text-brand-purple transition hover:bg-purple-100/70 hover:text-brand-indigo"
+          >
+            Researcher Dashboard
+          </button>
+        </div>
       </div>
     </header>
   );
 }
 
 function Notice({ children, tone = "info" }) {
-  const styles = { info: "border-teal/20 bg-mint text-teal", error: "border-red-200 bg-red-50 text-red-700", success: "border-emerald-200 bg-emerald-50 text-emerald-700" };
-  return <div className={`rounded-xl border px-4 py-3 text-sm ${styles[tone]}`}>{children}</div>;
+  const styles = {
+    info: "border-purple-200 bg-purple-50/80 text-brand-purple",
+    error: "border-red-200 bg-red-50 text-red-700",
+    success: "border-emerald-200 bg-emerald-50 text-emerald-700"
+  };
+  return <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${styles[tone]}`}>{children}</div>;
 }
 
 function ParticipantForm({ participant, setParticipant, onContinue, pending, onRetryPending, environments }) {
   const [isManual, setIsManual] = useState(false);
   const [loadingId, setLoadingId] = useState(false);
   const [idError, setIdError] = useState("");
+  const [activeTab, setActiveTab] = useState("why");
 
   const update = (key) => (event) => {
     const val = event.target.type === "checkbox" ? event.target.checked : key === "participant_id" ? event.target.value.toUpperCase() : event.target.value;
@@ -103,8 +216,7 @@ function ParticipantForm({ participant, setParticipant, onContinue, pending, onR
     }
   }, [setParticipant]);
 
-  const handleGenderChange = (event) => {
-    const gender = event.target.value;
+  const handleGenderChange = (gender) => {
     setParticipant((prev) => ({ ...prev, gender_category: gender }));
     if (!isManual && gender) {
       fetchNextId(gender);
@@ -118,142 +230,380 @@ function ParticipantForm({ participant, setParticipant, onContinue, pending, onR
   const idHint = participant.gender_category === "male" ? "M01–M20" : participant.gender_category === "female" ? "F01–F75" : participant.gender_category === "unspecified" ? "U01–U99" : "F01–F75, M01–M20, or U01–U99";
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-8">
-        <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-teal">Participant setup</p>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Help us build safer technology.</h1>
-        <p className="mt-3 max-w-2xl text-slate-600">
-          Record short Urdu phrases for academic research. We collect no contact details or government identifiers.
-        </p>
-        {pending.length > 0 && (
-          <div className="mt-5">
-            <Notice>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span>
-                  <span className="font-semibold">{pending.length} pending upload{pending.length > 1 ? "s" : ""}</span> from an earlier session remain safely on this device.
+    <main className="mx-auto max-w-4xl px-4 py-6 sm:py-10 space-y-8">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-3xl border border-purple-200/80 bg-gradient-to-br from-[#1b0a33] via-[#321259] to-[#601356] p-6 sm:p-10 text-white shadow-xl">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-brand-pink/20 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-10 -mb-16 w-56 h-56 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-md text-pink-200 border border-white/10">
+              <Sparkles size={13} className="text-pink-300" />
+              Air University · BS AI Research
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-500/30">
+              <ShieldCheck size={13} />
+              100% Zero-PII Anonymous
+            </span>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="max-w-2xl">
+              <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl text-white">
+                Help Us Build <span className="bg-gradient-to-r from-pink-400 via-rose-300 to-amber-200 bg-clip-text text-transparent">Safer AI Technology</span>
+              </h1>
+              <p className="mt-3 text-sm sm:text-base text-purple-100/90 leading-relaxed">
+                SheAlert is developing an automatic distress detection system for women in Pakistan. By recording short Urdu audio clips, you directly train the AI model that can save lives during acute emergencies.
+              </p>
+            </div>
+            <div className="shrink-0 flex md:flex-col items-center gap-3">
+              <img
+                src="/logo.png"
+                alt="SheAlert Shield Logo"
+                className="h-20 w-20 sm:h-24 sm:w-24 object-contain filter drop-shadow-[0_10px_20px_rgba(225,29,116,0.4)] transition-transform hover:scale-105"
+              />
+              <InstagramPill compact />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pending Uploads Alert */}
+      {pending.length > 0 && (
+        <Notice>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>
+              <span className="font-bold">{pending.length} pending upload{pending.length > 1 ? "s" : ""}</span> from an earlier session remain safely stored on this device.
+            </span>
+            <button
+              onClick={onRetryPending}
+              className="rounded-lg bg-brand-purple px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-indigo transition"
+            >
+              Retry saved uploads
+            </button>
+          </div>
+        </Notice>
+      )}
+
+      {/* Purpose & Motivation Cards: Why Your Voice Matters */}
+      <div className="rounded-3xl border border-purple-100 bg-white p-6 sm:p-8 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-100 gap-3">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Heart className="text-brand-pink fill-brand-pink" size={22} />
+              Why Your Voice Matters
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Understanding why both female and male voices are required to build an accurate safety model.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab("why")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                activeTab === "why" ? "bg-white text-brand-purple shadow-sm" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Voices Needed
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("privacy")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                activeTab === "privacy" ? "bg-white text-brand-purple shadow-sm" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Privacy & Ethics
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("guide")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                activeTab === "guide" ? "bg-white text-brand-purple shadow-sm" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Recording Tips
+            </button>
+          </div>
+        </div>
+
+        {activeTab === "why" && (
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            {/* Female Contribution Card */}
+            <div className="rounded-2xl border border-pink-200/80 bg-gradient-to-br from-pink-50/70 via-rose-50/40 to-white p-5 sm:p-6 shadow-sm transition hover:shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-extrabold text-brand-pink border border-pink-200">
+                  Target: 75 Volunteers (F01–F75)
                 </span>
-                <button onClick={onRetryPending} className="rounded-lg bg-teal px-3 py-2 text-xs font-bold text-white">
-                  Retry saved uploads
-                </button>
+                <span className="text-2xl">👩</span>
               </div>
-            </Notice>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                For Female Contributors: Acute Distress Detection
+              </h3>
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                SheAlert is building Pakistan’s first acoustic distress dataset for Urdu phrases like <span className="font-semibold text-slate-800">"Bachao"</span>, <span className="font-semibold text-slate-800">"Madad karo"</span>, and <span className="font-semibold text-slate-800">"Choro mujhe"</span>.
+              </p>
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                When someone is being grabbed or frozen in fear, they often cannot touch their phone. The model listens for authentic vocal patterns to trigger an automated SOS. Diverse pitches and regional accents ensure the system never misses a cry for help.
+              </p>
+              <div className="mt-4 pt-3 border-t border-pink-100 flex items-center gap-2 text-xs font-semibold text-brand-pink">
+                <CheckCircle2 size={15} /> 20 short takes (~10 minutes total)
+              </div>
+            </div>
+
+            {/* Male Contribution Card */}
+            <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-br from-purple-50/70 via-indigo-50/40 to-white p-5 sm:p-6 shadow-sm transition hover:shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-extrabold text-brand-purple border border-purple-200">
+                  Target: 20 Volunteers (M01–M20)
+                </span>
+                <span className="text-2xl">👨</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                For Male Contributors: Contrast & False-Alarm Prevention
+              </h3>
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Why are male voices needed? To prevent false alarms! The AI requires acoustic contrast data—including aggressive commands, stern tones, and everyday conversational Urdu.
+              </p>
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Your recordings train the AI to distinguish between real distress calls and background speech or attacker threats, preventing unnecessary alerts while ensuring absolute reliability in crises.
+              </p>
+              <div className="mt-4 pt-3 border-t border-purple-100 flex items-center gap-2 text-xs font-semibold text-brand-purple">
+                <CheckCircle2 size={15} /> 30 short takes (~15 minutes total)
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "privacy" && (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/80 p-5 sm:p-6">
+            <div className="flex items-start gap-4">
+              <div className="rounded-xl bg-purple-100 p-3 text-brand-purple shrink-0">
+                <Lock size={22} />
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                  Zero-PII & Complete Privacy Guarantee
+                </h3>
+                <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>No Personal Information:</strong> We do NOT ask for or store your name, phone number, CNIC, email, or any personal identifier.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>Anonymous Identifiers:</strong> You are identified solely by a random research code (e.g. F07 or M08).</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>Academic Research Only:</strong> Conducted under faculty supervision at Air University (Dept. of Creative Technologies) in accordance with research ethics protocols.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <span><strong>Right to Withdraw:</strong> You can stop recording or request deletion at any time without giving any reason.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "guide" && (
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-2 font-bold text-slate-800 text-sm mb-1.5">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-purple text-xs text-white font-bold">1</span>
+                Distance: ~30 cm
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Hold or place your phone about 30 cm (approx. one foot) from your mouth. This prevents audio distortion and breath pops.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-2 font-bold text-slate-800 text-sm mb-1.5">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-pink text-xs text-white font-bold">2</span>
+                Simulation & Acting
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                All lines are simulated acting—there is no real danger! Express the designated tone (Mild or Urgent) naturally without straining your voice.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-2 font-bold text-slate-800 text-sm mb-1.5">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs text-white font-bold">3</span>
+                Test & Re-record
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                You will record a 5-second test clip first. During the session, you can always listen back and re-record any take until satisfied.
+              </p>
+            </div>
           </div>
         )}
       </div>
 
-      <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-        <div className="grid gap-5 sm:grid-cols-2">
-          {/* 1. Voice / Gender Category FIRST */}
-          <div className="sm:col-span-2">
-            <label className="text-sm font-semibold text-slate-800">
-              Voice / gender category <span className="text-coral">*</span>
-              <select
-                required
-                value={participant.gender_category}
-                onChange={handleGenderChange}
-                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
-              >
-                <option value="">Select voice category</option>
-                {Object.entries(genderLabels).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
+      {/* Participant Form Card */}
+      <div className="rounded-3xl border border-purple-100 bg-white p-6 sm:p-8 shadow-sm space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Volunteer Setup</h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Select your voice category to automatically receive your reserved anonymous volunteer ID.
+          </p>
+        </div>
+
+        {/* 1. Voice Category Selector Cards */}
+        <div>
+          <label className="block text-sm font-bold text-slate-800 mb-3">
+            Select Voice / Gender Category <span className="text-brand-pink">*</span>
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => handleGenderChange("female")}
+              className={`flex items-start gap-4 rounded-2xl border p-4 text-left transition-all ${
+                participant.gender_category === "female"
+                  ? "border-pink-500 bg-pink-50/50 shadow-md ring-2 ring-pink-500/20"
+                  : "border-slate-200 hover:border-pink-300 hover:bg-slate-50"
+              }`}
+            >
+              <div className={`rounded-xl p-3 text-xl ${participant.gender_category === "female" ? "bg-brand-pink text-white" : "bg-pink-100 text-pink-700"}`}>
+                👩
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-900">Female Voice</p>
+                  <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[11px] font-extrabold text-brand-pink">
+                    F01 – F75
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                  20 clips · Distress calls (Bachao, Madad karo), stern lines, and casual speech.
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleGenderChange("male")}
+              className={`flex items-start gap-4 rounded-2xl border p-4 text-left transition-all ${
+                participant.gender_category === "male"
+                  ? "border-purple-600 bg-purple-50/50 shadow-md ring-2 ring-purple-500/20"
+                  : "border-slate-200 hover:border-purple-300 hover:bg-slate-50"
+              }`}
+            >
+              <div className={`rounded-xl p-3 text-xl ${participant.gender_category === "male" ? "bg-brand-purple text-white" : "bg-purple-100 text-purple-700"}`}>
+                👨
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-900">Male Voice</p>
+                  <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-extrabold text-brand-purple">
+                    M01 – M20
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                  30 clips · Acoustic contrast control, aggressive lines, and casual Urdu speech.
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* 2. Anonymous Volunteer ID */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-bold text-slate-800">
+              Anonymous Volunteer ID <span className="text-brand-pink">*</span>
             </label>
-            <span className="mt-1 block text-xs font-normal text-slate-500">
-              Select your category to automatically receive your anonymous research ID.
-            </span>
-          </div>
-
-          {/* 2. Volunteer ID (Auto-assigned or Manual) */}
-          <div className="sm:col-span-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-semibold text-slate-800">
-                Anonymous Volunteer ID <span className="text-coral">*</span>
-              </label>
-              {participant.gender_category && (
-                <button
-                  type="button"
-                  onClick={() => setIsManual(!isManual)}
-                  className="text-xs font-medium text-teal hover:underline"
-                >
-                  {isManual ? "Switch to Auto-Assign" : "Have a specific ID? Enter manually"}
-                </button>
-              )}
-            </div>
-
-            {!participant.gender_category ? (
-              <div className="mt-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                Please select your voice/gender category above to generate your unique ID.
-              </div>
-            ) : isManual ? (
-              <div className="mt-2 space-y-1.5">
-                <div className="flex gap-2">
-                  <input
-                    required
-                    value={participant.participant_id}
-                    onChange={update("participant_id")}
-                    placeholder={idHint}
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 font-mono font-bold uppercase outline-none focus:border-teal focus:ring-2 focus:ring-teal/20"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsManual(false);
-                      fetchNextId(participant.gender_category);
-                    }}
-                    className="shrink-0 rounded-xl border border-teal/30 bg-teal/10 px-4 py-3 text-xs font-semibold text-teal hover:bg-teal/20"
-                  >
-                    Auto-assign
-                  </button>
-                </div>
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>Allowed: {idHint}</span>
-                  {validId && <span className="font-semibold text-emerald-600">✓ Valid ID format</span>}
-                </div>
-              </div>
-            ) : (
-              <div className="mt-2 flex items-center justify-between rounded-xl border border-teal/30 bg-teal/5 px-4 py-3">
-                <div className="flex items-center gap-3">
-                  {loadingId ? (
-                    <Loader2 className="animate-spin text-teal" size={22} />
-                  ) : (
-                    <CheckCircle2 className="text-teal" size={22} />
-                  )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xl font-bold tracking-wide text-teal">
-                        {loadingId ? "Generating…" : participant.participant_id || "None"}
-                      </span>
-                      <span className="rounded-full bg-teal/15 px-2.5 py-0.5 text-xs font-semibold text-teal">
-                        Auto-assigned · Conflict-free
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500">
-                      Reserved automatically so your data never clashes with other volunteers.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => fetchNextId(participant.gender_category)}
-                  disabled={loadingId}
-                  title="Generate another available ID"
-                  className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-50"
-                >
-                  <RefreshCw size={16} className={loadingId ? "animate-spin" : ""} />
-                </button>
-              </div>
+            {participant.gender_category && (
+              <button
+                type="button"
+                onClick={() => setIsManual(!isManual)}
+                className="text-xs font-semibold text-brand-purple hover:underline"
+              >
+                {isManual ? "Switch to Auto-Assign" : "Have a specific assigned ID? Enter manually"}
+              </button>
             )}
-            {idError && <p className="mt-1 text-xs text-red-600">{idError}</p>}
           </div>
 
-          {/* 3. Age group */}
-          <label className="text-sm font-semibold">
-            Age group
+          {!participant.gender_category ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4 text-center text-sm text-slate-500">
+              Please choose your voice category above to generate your unique ID.
+            </div>
+          ) : isManual ? (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  required
+                  value={participant.participant_id}
+                  onChange={update("participant_id")}
+                  placeholder={idHint}
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 font-mono text-lg font-bold uppercase outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsManual(false);
+                    fetchNextId(participant.gender_category);
+                  }}
+                  className="shrink-0 rounded-2xl border border-purple-300 bg-purple-50 px-4 py-3 text-xs font-bold text-brand-purple hover:bg-purple-100 transition"
+                >
+                  Auto-assign
+                </button>
+              </div>
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span>Format: {idHint}</span>
+                {validId && <span className="font-semibold text-emerald-600">✓ Valid ID format</span>}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between rounded-2xl border border-purple-200/90 bg-gradient-to-r from-purple-50/60 to-pink-50/40 p-4">
+              <div className="flex items-center gap-3.5">
+                {loadingId ? (
+                  <Loader2 className="animate-spin text-brand-purple" size={24} />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 text-brand-purple font-bold">
+                    <CheckCircle2 size={22} />
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-2xl font-black tracking-wider text-brand-indigo">
+                      {loadingId ? "Assigning…" : participant.participant_id || "None"}
+                    </span>
+                    <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-bold text-brand-purple">
+                      Auto-assigned · Conflict-free
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Reserved automatically so your data never clashes with other volunteers.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => fetchNextId(participant.gender_category)}
+                disabled={loadingId}
+                title="Generate another available ID"
+                className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition"
+              >
+                <RefreshCw size={16} className={loadingId ? "animate-spin" : ""} />
+              </button>
+            </div>
+          )}
+          {idError && <p className="mt-1.5 text-xs text-red-600">{idError}</p>}
+        </div>
+
+        {/* 3. Additional Metadata Grid */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">Age Group</label>
             <select
               value={participant.age_group}
               onChange={update("age_group")}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-teal"
+              className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
             >
               <option>Under 18</option>
               <option>18-25</option>
@@ -262,63 +612,77 @@ function ParticipantForm({ participant, setParticipant, onContinue, pending, onR
               <option>51+</option>
               <option>Prefer not to say</option>
             </select>
-          </label>
+          </div>
 
-          {/* 4. Native language */}
-          <label className="text-sm font-semibold">
-            Native language
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-2">Native Language</label>
             <input
               value={participant.native_language}
               onChange={update("native_language")}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-teal"
+              placeholder="e.g. Urdu, Punjabi, Pashto, Sindhi"
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
             />
-          </label>
+          </div>
 
-          {/* 5. Recording environment */}
-          <label className="text-sm font-semibold sm:col-span-2">
-            Recording environment
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-bold text-slate-800 mb-2">Recording Environment</label>
             <select
               value={participant.environment}
               onChange={update("environment")}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-teal"
+              className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
             >
               {Object.entries(environments).map(([code, label]) => (
-                <option key={code} value={code}>{code} — {label}</option>
+                <option key={code} value={code}>
+                  {code} — {label}
+                </option>
               ))}
             </select>
-          </label>
+            <span className="mt-1 block text-xs text-slate-500">
+              Select the real setting where you are recording this session.
+            </span>
+          </div>
         </div>
 
-        {/* Consent */}
-        <div className="rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-          <p className="font-semibold">Consent</p>
-          <p className="mt-1">
-            I understand that my voice recordings will be collected for academic research and development of the SheAlert women-safety system, and labeled according to the voice/gender category I select.
+        {/* 4. Consent Agreement */}
+        <div className="rounded-2xl border border-purple-100 bg-purple-50/40 p-4 sm:p-5 text-sm leading-6 text-slate-700">
+          <p className="font-bold text-slate-900 flex items-center gap-2">
+            <ShieldCheck size={18} className="text-brand-purple" />
+            Informed Research Consent
           </p>
-          <label className="mt-3 flex cursor-pointer items-start gap-3 font-medium">
+          <p className="mt-1.5 text-xs sm:text-sm text-slate-600">
+            I understand that my voice recordings will be collected anonymously for academic research and training the SheAlert women-safety system, labeled strictly under my anonymous ID without personal data.
+          </p>
+          <label className="mt-3.5 flex cursor-pointer items-start gap-3 font-medium text-slate-900">
             <input
               type="checkbox"
               checked={participant.consent}
               onChange={update("consent")}
-              className="mt-1 h-5 w-5 accent-teal"
+              className="mt-1 h-5 w-5 rounded accent-brand-purple cursor-pointer"
             />
-            I agree to participate and allow my voice recordings to be used for this research.
+            <span className="text-xs sm:text-sm">
+              I agree to participate and allow my anonymous voice recordings to be used for this safety research dataset.
+            </span>
           </label>
         </div>
 
+        {/* 5. Submit CTA */}
         <button
           disabled={!valid}
           onClick={onContinue}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal px-5 py-4 font-bold text-white shadow-sm transition hover:bg-teal/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="group flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 font-bold text-white shadow-lg transition-all duration-200 hover:scale-[1.01] hover:shadow-xl active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+          style={{
+            background: valid
+              ? "linear-gradient(90deg, #2b1154 0%, #7c1a6e 50%, #e11d74 100%)"
+              : "#cbd5e1"
+          }}
         >
-          Continue to session <ChevronRight size={20} />
+          <span className="text-base sm:text-lg">Continue to Recording Session</span>
+          <ChevronRight size={22} className="transition-transform group-hover:translate-x-1" />
         </button>
       </div>
 
-      <div className="mt-5 flex gap-3 text-xs text-slate-500">
-        <ShieldCheck size={16} className="shrink-0 text-teal" />
-        Your recording is kept private and stored only for this research dataset.
-      </div>
+      {/* Contact & Support Banner */}
+      <ContactSupportBanner />
     </main>
   );
 }
@@ -404,7 +768,7 @@ function Recorder({ item, participant, filename, localOnly = false, onSuccess })
           audio: {
             echoCancellation: false,
             noiseSuppression: false,
-            autoGainControl: false,
+            autoGainControl: false
           }
         });
       } catch {
@@ -446,56 +810,57 @@ function Recorder({ item, participant, filename, localOnly = false, onSuccess })
       recorder.onstop = () => {
         const audioBlob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
         setBlob(audioBlob);
-        // Only warn if the volume level was truly non-existent (peak == 0 and tiny blob indicating no signal)
         const isSuspiciouslyQuiet = peakRef.current === 0 && audioBlob.size < 4000;
         setQuietWarning(isSuspiciouslyQuiet);
-        setStatus("ready");
-        stopTracks();
-        cancelAnimationFrame(animationRef.current);
-        disconnectAudioNodes();
-        setLevel(0);
       };
 
-      recorder.start(250);
-      setSeconds(0);
+      recorder.start(100);
       setStatus("recording");
-      timerRef.current = setInterval(() => setSeconds((value) => value + 1), 1000);
-    } catch (err) {
-      console.error("Mic start error:", err);
-      setError("Microphone access was denied or unavailable. Please check permissions and try again.");
+      setSeconds(0);
+      timerRef.current = setInterval(() => {
+        setSeconds((prev) => prev + 1);
+      }, 1000);
+    } catch (startError) {
+      setError(startError.message || "Microphone access was denied or failed.");
+      stopTracks();
+      disconnectAudioNodes();
     }
   };
 
   const stop = () => {
-    if (recorderRef.current?.state === "recording") {
+    clearInterval(timerRef.current);
+    cancelAnimationFrame(animationRef.current);
+    if (recorderRef.current && recorderRef.current.state === "recording") {
       recorderRef.current.stop();
-      clearInterval(timerRef.current);
     }
+    stopTracks();
+    disconnectAudioNodes();
+    setStatus("ready");
   };
 
   const rerecord = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    setIsPlaying(false);
-    setBlob(null);
+    clearInterval(timerRef.current);
+    cancelAnimationFrame(animationRef.current);
+    stopTracks();
+    disconnectAudioNodes();
     setStatus("idle");
     setSeconds(0);
+    setLevel(0);
+    setBlob(null);
     setError("");
+    setPendingId(null);
     setQuietWarning(false);
-    setUploadResult(null);
   };
 
   const togglePlayback = () => {
     if (!audioRef.current || !audioUrl) return;
     if (isPlaying) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
       setIsPlaying(false);
     } else {
       audioRef.current.currentTime = 0;
-      audioRef.current.play()
+      audioRef.current
+        .play()
         .then(() => setIsPlaying(true))
         .catch((err) => {
           console.error("Playback error:", err);
@@ -591,104 +956,140 @@ function Recorder({ item, participant, filename, localOnly = false, onSuccess })
   }, []);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-      <div className="mb-6 text-center">
-        <span className="rounded-full bg-mint px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal">
-          {localOnly ? "Pre-session test" : `${item.section_class} · ${classLabels[item.section_class]}`}
+    <section className="rounded-3xl border border-purple-100 bg-white p-6 sm:p-10 shadow-sm">
+      {/* Title & Script Presentation */}
+      <div className="mb-8 text-center">
+        <span className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider bg-purple-100 text-brand-purple border border-purple-200">
+          {localOnly ? "Pre-session test" : `Section ${item.section_class} · ${classLabels[item.section_class]}`}
         </span>
+
         {localOnly ? (
           <>
-            <h1 className="mt-5 text-2xl font-bold">5-second test clip</h1>
-            <p className="mt-3 text-slate-600">
-              Check that your microphone is working and audio is clear. This clip is saved locally only and is never uploaded.
+            <h1 className="mt-5 text-2xl sm:text-3xl font-extrabold text-slate-900">5-Second Audio Test Clip</h1>
+            <p className="mt-3 max-w-md mx-auto text-sm text-slate-600 leading-relaxed">
+              Verify your microphone clarity before starting. This test clip is saved locally and is never sent to the server.
             </p>
           </>
         ) : (
           <>
-            <p className="urdu mt-5 text-3xl font-bold text-ink sm:text-5xl">{item.word}</p>
-            {item.prompt && <p className="mt-3 text-lg font-semibold text-teal">Ask this question</p>}
-            <p className="mt-2 text-slate-500">{item.prompt || item.meaning}</p>
-            {item.intensity && (
-              <span className="mt-3 inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
-                {item.intensity}
-              </span>
+            <p className="mt-6 text-3xl font-black text-slate-900 sm:text-5xl tracking-wide font-urdu">
+              {item.word}
+            </p>
+            {item.prompt && (
+              <p className="mt-3 text-base sm:text-lg font-bold text-brand-purple">
+                Ask or Answer in Casual Urdu
+              </p>
             )}
-            {item.loudness && (
-              <span className="mt-3 inline-block rounded-full bg-coral/10 px-3 py-1 text-xs font-bold text-coral">
-                {item.loudness}
-              </span>
+            <p className="mt-2 text-sm sm:text-base text-slate-600 font-medium">
+              {item.prompt || item.meaning}
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              {item.take?.label && (
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                  {item.take.label}
+                </span>
+              )}
+              {item.intensity && (
+                <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-bold text-brand-pink border border-pink-200">
+                  Target Tone: {item.intensity}
+                </span>
+              )}
+              {item.loudness && (
+                <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold text-brand-purple border border-purple-200">
+                  Loudness: {item.loudness}
+                </span>
+              )}
+            </div>
+
+            {item.direction && (
+              <p className="mt-3 text-xs sm:text-sm font-semibold text-brand-purple bg-purple-50/70 inline-block px-4 py-1.5 rounded-full border border-purple-100">
+                Direction: {item.direction}
+              </p>
             )}
             {item.prompt && (
-              <p className="mt-3 text-sm text-slate-500">
-                Let the volunteer answer in their own words for about 5 to 7 seconds. Do not make them read a script for this part.
+              <p className="mt-3 text-xs text-slate-500 max-w-md mx-auto">
+                Answer in your own words for about 5 to 7 seconds. You do not need to read a rigid script for this section.
               </p>
             )}
           </>
         )}
       </div>
 
-      <div className="mb-6 rounded-xl bg-slate-50 p-4">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold">
+      {/* Live VU / Audio Level Meter */}
+      <div className="mb-8 rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50/40 via-white to-pink-50/30 p-5">
+        <div className="flex items-center justify-between text-sm font-semibold text-slate-700">
+          <span className="flex items-center gap-2">
+            <Volume2 size={16} className={status === "recording" ? "text-brand-pink animate-pulse" : "text-slate-400"} />
             {status === "recording"
-              ? "Recording…"
+              ? "Recording in progress…"
               : status === "submitting"
               ? "Uploading securely…"
               : status === "done"
-              ? "Saved"
-              : "Ready when you are"}
+              ? "Saved successfully!"
+              : "Microphone ready"}
           </span>
-          <span className="font-mono text-teal">
+          <span className="font-mono text-base font-bold text-brand-purple">
             {String(Math.floor(seconds / 60)).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}
           </span>
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+
+        {/* Visual Bar */}
+        <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200/80 p-0.5">
           <div
-            className={`h-full rounded-full transition-all ${level > 85 ? "bg-coral" : "bg-teal"}`}
+            className="h-full rounded-full transition-all duration-75"
             style={{
-              width: `${status === "recording" ? Math.max(level, 3) : Math.min(100, (seconds / (localOnly ? 5 : 20)) * 100)}%`
+              width: `${status === "recording" ? Math.max(level, 4) : Math.min(100, (seconds / (localOnly ? 5 : 15)) * 100)}%`,
+              background: level > 85 ? "#e11d74" : "linear-gradient(90deg, #3b1262 0%, #85166f 50%, #e62872 100%)"
             }}
           />
         </div>
-        <p className="mt-2 text-xs text-slate-500">Microphone level · Keep the phone 30 cm from your mouth.</p>
+        <p className="mt-2 text-center text-xs text-slate-500 font-medium">
+          Microphone Level · Hold phone approximately 30 cm from mouth.
+        </p>
       </div>
 
+      {/* Error or Warning notices */}
       {error && (
-        <div className="mb-5">
+        <div className="mb-6">
           <Notice tone="error">
-            {error} {pendingId && !localOnly && <span className="font-semibold">It is saved on this device for retry.</span>}
+            {error} {pendingId && !localOnly && <span className="font-bold">Clip saved safely on device for retry.</span>}
           </Notice>
         </div>
       )}
 
       {quietWarning && (
-        <div className="mb-5">
+        <div className="mb-6">
           <Notice tone="info">
-            Your recording seems quiet. Please make sure the microphone is close enough and you speak clearly.
+            Notice: Audio signal appears very quiet. Please ensure your microphone is unobstructed and speak clearly.
           </Notice>
         </div>
       )}
 
+      {/* Action Controls */}
       {status === "done" ? (
         <div className="flex flex-col items-center justify-center gap-4 py-4 text-center">
-          <div className="flex items-center gap-2 font-semibold text-emerald-700">
-            <CheckCircle2 size={22} />
+          <div className="flex items-center gap-2 text-lg font-bold text-emerald-700">
+            <CheckCircle2 size={24} />
             <span>
               {localOnly
-                ? "Test clip saved on this device only."
+                ? "Test clip saved on this device only!"
                 : uploadResult?.drive_file_id
-                ? "Take submitted & saved to Google Drive!"
-                : "Take submitted & saved safely on server!"}
+                ? "Take submitted & backed up to Google Drive!"
+                : "Take submitted & saved safely on research server!"}
             </span>
           </div>
           {!localOnly && !uploadResult?.drive_file_id && (
-            <p className="max-w-md rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-700">
+            <p className="max-w-md rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs text-amber-800">
               Note: Remote Google Drive upload is pending or unconfigured. Audio is safely stored on the local server.
             </p>
           )}
           <button
             onClick={onSuccess}
-            className="flex items-center gap-2 rounded-xl bg-teal px-8 py-3.5 text-base font-bold text-white shadow-md transition hover:bg-teal/90"
+            className="flex items-center gap-2 rounded-2xl px-8 py-4 text-base font-bold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95"
+            style={{
+              background: "linear-gradient(90deg, #2b1154 0%, #7c1a6e 50%, #e11d74 100%)"
+            }}
           >
             Continue to Next Take <ChevronRight size={20} />
           </button>
@@ -698,52 +1099,81 @@ function Recorder({ item, participant, filename, localOnly = false, onSuccess })
           {status === "idle" && (
             <button
               onClick={start}
-              className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-teal px-7 py-4 font-bold text-white shadow-sm hover:bg-teal/90"
+              className="flex min-h-14 items-center justify-center gap-2.5 rounded-2xl px-8 py-4 font-bold text-white shadow-md transition-all hover:scale-105 active:scale-95"
+              style={{
+                background: "linear-gradient(90deg, #2b1154 0%, #7c1a6e 50%, #e11d74 100%)"
+              }}
             >
-              <Mic />Start recording
+              <Mic size={20} />
+              <span>Start Recording</span>
             </button>
           )}
+
           {status === "recording" && (
             <button
               onClick={stop}
-              className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-coral px-7 py-4 font-bold text-white shadow-sm"
+              className="relative flex min-h-14 items-center justify-center gap-2.5 rounded-2xl bg-brand-pink px-8 py-4 font-bold text-white shadow-lg transition-all hover:bg-pink-700 active:scale-95"
             >
-              <Square size={18} fill="currentColor" />Stop recording
+              <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-white"></span>
+              </span>
+              <Square size={18} fill="currentColor" />
+              <span>Stop Recording</span>
             </button>
           )}
+
           {status === "ready" && (
             <>
               <button
                 type="button"
                 onClick={togglePlayback}
-                className={`flex min-h-14 items-center justify-center gap-2 rounded-xl border px-5 py-4 font-bold transition ${
-                  isPlaying ? "border-teal bg-mint text-teal" : "border-slate-300 hover:bg-slate-50 text-slate-700"
+                className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl border px-6 py-4 font-bold transition ${
+                  isPlaying
+                    ? "border-purple-600 bg-purple-100 text-brand-purple"
+                    : "border-slate-300 hover:bg-slate-50 text-slate-700"
                 }`}
               >
                 {isPlaying ? <Square size={18} fill="currentColor" /> : <Play size={18} />}
-                {isPlaying ? "Pause playback" : "Play recording"}
+                <span>{isPlaying ? "Pause Playback" : "Play Recording"}</span>
               </button>
+
               <button
                 onClick={rerecord}
-                className="flex min-h-14 items-center justify-center gap-2 rounded-xl border border-slate-300 px-5 py-4 font-bold hover:bg-slate-50"
+                className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-slate-300 px-6 py-4 font-bold text-slate-700 hover:bg-slate-50 transition"
               >
-                <RefreshCw size={18} />Record again
+                <RefreshCw size={18} />
+                <span>Record Again</span>
               </button>
+
               <button
                 onClick={submit}
-                className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-teal px-5 py-4 font-bold text-white hover:bg-teal/90"
+                className="flex min-h-14 items-center justify-center gap-2 rounded-2xl px-7 py-4 font-bold text-white shadow-md transition-all hover:scale-105 active:scale-95"
+                style={{
+                  background: "linear-gradient(90deg, #2b1154 0%, #7c1a6e 50%, #e11d74 100%)"
+                }}
               >
-                {localOnly ? "Save test locally" : <><UploadCloud size={18} />Submit</>}
+                {localOnly ? (
+                  "Save Test Locally"
+                ) : (
+                  <>
+                    <UploadCloud size={18} />
+                    <span>Submit Take</span>
+                  </>
+                )}
               </button>
             </>
           )}
+
           {status === "submitting" && (
-            <button disabled className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-slate-300 px-7 py-4 font-bold text-white">
-              <Loader2 className="animate-spin" />Uploading…
+            <button disabled className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-slate-300 px-8 py-4 font-bold text-white">
+              <Loader2 className="animate-spin" />
+              <span>Uploading Take…</span>
             </button>
           )}
         </div>
       )}
+
       {audioUrl && (
         <audio
           ref={audioRef}
@@ -778,6 +1208,7 @@ function Session({ participant, content, onDone }) {
       )
     );
   }, [sections]);
+
   const [index, setIndex] = useState(-1);
   const [testDone, setTestDone] = useState(false);
   const item = items[index];
@@ -791,75 +1222,130 @@ function Session({ participant, content, onDone }) {
 
   if (!testDone)
     return (
-      <main className="mx-auto max-w-3xl px-4 py-8">
-        <div className="mb-6">
-          <p className="text-sm font-semibold uppercase tracking-widest text-teal">Before every session</p>
-          <h1 className="mt-2 text-3xl font-bold">Prepare the recording</h1>
-          <p className="mt-3 text-slate-600">Set the phone to 16 kHz, 16-bit, mono. Hold or place the phone 30 cm from the mouth.</p>
+      <main className="mx-auto max-w-4xl px-4 py-6 sm:py-10 space-y-6">
+        <div className="rounded-3xl border border-purple-100 bg-white p-6 sm:p-8 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-brand-purple">
+              Pre-Session Check
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Prepare Your Recording</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Follow these simple steps before beginning the research collection to ensure high audio quality:
+          </p>
+
+          <div className="mt-5 space-y-3 rounded-2xl border border-purple-100 bg-purple-50/30 p-5 text-xs sm:text-sm text-slate-700 leading-relaxed">
+            <div className="flex items-start gap-3">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-purple text-xs font-bold text-white">1</span>
+              <span><strong>Anonymity:</strong> Your assigned ID is <strong className="font-mono text-brand-purple">{participant.participant_id}</strong>. Your real identity is never recorded.</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-purple text-xs font-bold text-white">2</span>
+              <span><strong>Simulated Acting:</strong> All spoken lines are acting. There is zero real danger. Take breaths whenever you need.</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-purple text-xs font-bold text-white">3</span>
+              <span><strong>Distance:</strong> Hold or place your device ~30 cm away from your mouth in your selected setting ({participant.environment}).</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-purple text-xs font-bold text-white">4</span>
+              <span><strong>Test Clip:</strong> Record a 5-second test clip below to check that your microphone is working clearly.</span>
+            </div>
+          </div>
         </div>
-        <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 shadow-sm">
-          <ol className="list-inside list-decimal space-y-1">
-            <li>Sign the consent form with the volunteer. Give them their ID (example: F01 or M01). Do not write their name anywhere else.</li>
-            <li>Explain: everything they will say is acting. There is no real danger. They can stop at any time without giving a reason.</li>
-            <li>Set the phone to 16 kHz, 16-bit, mono. Hold or place the phone 30 cm from the mouth.</li>
-            <li>Record one 5-second test clip. Check it is clear and not too loud or too quiet.</li>
-            <li>Confirm which environment(s) this volunteer will record in today.</li>
-          </ol>
-          <p className="mt-4 font-semibold">Say this to the volunteer:</p>
-          <p className="mt-1">"We will record a few short sections together. All of it is acting, and you're welcome to take a breath any time you need to."</p>
-        </div>
+
         <Recorder localOnly participant={participant} item={{}} filename="test" onSuccess={() => setTestDone(true)} />
       </main>
     );
 
   if (index === -1)
     return (
-      <main className="mx-auto max-w-3xl px-4 py-8">
-        <Notice tone="success">
-          Test clip saved locally. The session uses {content[contentGender].clips} clips ({content[contentGender].approx_time}).
-        </Notice>
-        <button
-          onClick={() => setIndex(0)}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-teal px-5 py-4 font-bold text-white shadow-sm hover:bg-teal/90"
-        >
-          Start Section D ({sections[0]?.title}) <ChevronRight size={20} />
-        </button>
+      <main className="mx-auto max-w-3xl px-4 py-12 text-center space-y-6">
+        <div className="rounded-3xl border border-purple-100 bg-white p-8 sm:p-12 shadow-sm">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 mb-4">
+            <CheckCircle2 size={36} />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Microphone Verified!</h1>
+          <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-md mx-auto">
+            Your audio test succeeded. The session consists of <strong className="text-brand-purple">{content[contentGender].clips} clips</strong> ({content[contentGender].approx_time}).
+          </p>
+          <button
+            onClick={() => setIndex(0)}
+            className="mt-8 flex w-full sm:w-auto mx-auto items-center justify-center gap-2.5 rounded-2xl px-10 py-4 font-bold text-white shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
+            style={{
+              background: "linear-gradient(90deg, #2b1154 0%, #7c1a6e 50%, #e11d74 100%)"
+            }}
+          >
+            <span>Start Section {sections[0]?.class} ({sections[0]?.title})</span>
+            <ChevronRight size={20} />
+          </button>
+        </div>
       </main>
     );
 
   if (!item)
     return (
-      <main className="mx-auto max-w-xl px-4 py-20 text-center">
-        <CheckCircle2 className="mx-auto text-teal" size={48} />
-        <h1 className="mt-5 text-3xl font-bold">Thank you.</h1>
-        <p className="mt-3 text-slate-600">You have completed all available clips.</p>
-        <button onClick={onDone} className="mt-6 rounded-xl border border-slate-300 px-5 py-3 font-semibold hover:bg-slate-50">
-          Finish session
-        </button>
+      <main className="mx-auto max-w-xl px-4 py-16 text-center space-y-6">
+        <div className="rounded-3xl border border-purple-100 bg-white p-8 sm:p-10 shadow-sm">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-tr from-brand-indigo to-brand-pink text-white mb-6 shadow-md">
+            <Heart size={40} className="fill-white" />
+          </div>
+          <h1 className="text-3xl font-extrabold text-slate-900">Shukriya! Thank You!</h1>
+          <p className="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed">
+            You have successfully completed all audio clips for volunteer <strong className="font-mono text-brand-purple">{participant.participant_id}</strong>. Your contribution brings us one step closer to safer women in Pakistan.
+          </p>
+
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <InstagramPill />
+            <button
+              onClick={onDone}
+              className="rounded-full border border-slate-300 px-6 py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
+            >
+              Finish & Return Home
+            </button>
+          </div>
+        </div>
+
+        <ContactSupportBanner />
       </main>
     );
 
   const sectionStart = index === 0 || items[index - 1].section_class !== item.section_class;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
-      <div className="mb-4 flex items-center justify-between text-sm font-semibold text-slate-500">
-        <span>
-          Section {item.section_class} · {section?.title}
-        </span>
-        <span>
-          Clip {index + 1} of {items.length}
-        </span>
+    <main className="mx-auto max-w-4xl px-4 py-6 sm:py-10 space-y-6">
+      {/* Session Progress Header */}
+      <div className="rounded-2xl border border-purple-100 bg-white p-4 sm:p-5 shadow-sm">
+        <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-600 mb-2.5">
+          <span className="flex items-center gap-2">
+            <span className="rounded-md bg-purple-100 px-2 py-0.5 text-xs font-black text-brand-purple">
+              {item.section_class}
+            </span>
+            {section?.title}
+          </span>
+          <span className="font-mono text-brand-purple">
+            Clip {index + 1} of {items.length}
+          </span>
+        </div>
+
+        <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{
+              width: `${((index + 1) / items.length) * 100}%`,
+              background: "linear-gradient(90deg, #2b1154 0%, #7c1a6e 50%, #e11d74 100%)"
+            }}
+          />
+        </div>
       </div>
-      <div className="mb-2 h-2 overflow-hidden rounded-full bg-slate-200">
-        <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${(index / items.length) * 100}%` }} />
-      </div>
+
       {sectionStart && (
-        <div className="mb-5 rounded-xl border border-teal/20 bg-mint p-4 text-sm text-teal">
-          <p className="font-bold">{section?.title}</p>
-          <p className="mt-1">{section?.instruction}</p>
+        <div className="rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50/80 to-pink-50/50 p-5 text-sm text-brand-purple shadow-sm">
+          <p className="font-extrabold text-base text-slate-900">{section?.title}</p>
+          <p className="mt-1 font-medium text-slate-700">{section?.instruction}</p>
         </div>
       )}
+
       <Recorder
         key={filename || `clip-${index}`}
         item={item}
@@ -867,11 +1353,16 @@ function Session({ participant, content, onDone }) {
         filename={filename}
         onSuccess={() => setIndex((value) => value + 1)}
       />
-      <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-        <p className="font-semibold text-ink">File name</p>
-        <p className="mt-1 break-all font-mono text-xs">{filename}.wav</p>
-        <p className="mt-2">Original audio is kept unchanged for research preprocessing later.</p>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <span className="font-bold text-slate-700">Dataset File ID: </span>
+          <span className="font-mono font-semibold text-brand-purple">{filename}.wav</span>
+        </div>
+        <span>Original 16 kHz uncompressed research recording</span>
       </div>
+
+      <ContactSupportBanner />
     </main>
   );
 }
@@ -917,11 +1408,11 @@ function Admin({ onBack }) {
   };
 
   const syncDrive = async () => {
-    setSyncStatus("Syncing...");
+    setSyncStatus("Syncing with Google Drive...");
     try {
       const response = await adminFetch("/api/admin/sync-drive", token, { method: "POST" });
       const data = await response.json();
-      setSyncStatus(`Synced: ${data.synced_count} uploaded, ${data.failed_count} failed.`);
+      setSyncStatus(`Sync finished: ${data.synced_count} files backed up, ${data.failed_count} failures.`);
       load();
     } catch (err) {
       setSyncStatus(`Drive sync error: ${err.message}`);
@@ -933,153 +1424,236 @@ function Admin({ onBack }) {
     const url = URL.createObjectURL(await response.blob());
     const link = document.createElement("a");
     link.href = url;
-    link.download = "metadata.csv";
+    link.download = "shealert_metadata.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
 
   if (!token || !stats)
     return (
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <button onClick={onBack} className="mb-6 text-sm font-semibold text-teal">
-          ← Participant collection
+      <main className="mx-auto max-w-4xl px-4 py-12">
+        <button
+          onClick={onBack}
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-bold text-brand-purple hover:underline"
+        >
+          ← Return to Volunteer Collection
         </button>
-        <form onSubmit={login} className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-2xl font-bold">Researcher dashboard</h1>
-          <p className="mt-2 text-sm text-slate-500">Private administration area.</p>
+
+        <form
+          onSubmit={login}
+          className="mx-auto max-w-md rounded-3xl border border-purple-100 bg-white p-8 shadow-sm"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="rounded-xl bg-purple-100 p-2.5 text-brand-purple">
+              <Lock size={20} />
+            </div>
+            <div>
+              <h1 className="text-xl font-extrabold text-slate-900">Researcher Dashboard</h1>
+              <p className="text-xs text-slate-500">Authorized research administration only.</p>
+            </div>
+          </div>
+
           {error && (
-            <div className="mt-4">
+            <div className="mb-4">
               <Notice tone="error">{error}</Notice>
             </div>
           )}
+
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
-            placeholder="Administrator password"
-            className="mt-6 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-teal"
+            placeholder="Enter research admin password"
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
           />
-          <button className="mt-4 w-full rounded-xl bg-teal px-4 py-3 font-bold text-white hover:bg-teal/90">
-            Sign in
+
+          <button
+            type="submit"
+            className="mt-5 w-full rounded-2xl py-3.5 font-bold text-white shadow-md transition hover:opacity-95"
+            style={{
+              background: "linear-gradient(90deg, #2b1154 0%, #7c1a6e 50%, #e11d74 100%)"
+            }}
+          >
+            Sign In to Dashboard
           </button>
         </form>
       </main>
     );
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
-      <button onClick={onBack} className="mb-6 text-sm font-semibold text-teal">
-        ← Participant collection
+    <main className="mx-auto max-w-5xl px-4 py-8 space-y-6">
+      <button
+        onClick={onBack}
+        className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-purple hover:underline"
+      >
+        ← Return to Volunteer Collection
       </button>
-      <div className="flex flex-wrap items-end justify-between gap-3">
+
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-teal">Research overview</p>
-          <h1 className="mt-1 text-3xl font-bold">Dataset dashboard</h1>
+          <p className="text-xs font-bold uppercase tracking-widest text-brand-purple">Air University Research</p>
+          <h1 className="mt-1 text-3xl font-extrabold text-slate-900">Dataset Dashboard</h1>
         </div>
-        <div className="flex flex-wrap gap-2">
+
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={syncDrive}
-            className="flex items-center gap-2 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal/90"
+            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+            style={{
+              background: "linear-gradient(90deg, #2b1154 0%, #7c1a6e 50%, #e11d74 100%)"
+            }}
           >
-            <UploadCloud size={16} />Sync to Google Drive
+            <UploadCloud size={16} /> Sync to Google Drive
           </button>
           <button
             onClick={retry}
-            className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+            className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
           >
-            <RefreshCw size={16} />Retry failed
+            <RefreshCw size={16} /> Retry Failed
           </button>
           <button
             onClick={download}
-            className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+            className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
           >
-            <Download size={16} />Export metadata
+            <Download size={16} /> Export Metadata
           </button>
-          <button onClick={() => load()} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-50">
+          <button
+            onClick={() => load()}
+            title="Refresh statistics"
+            className="rounded-xl border border-slate-300 bg-white p-2.5 text-slate-600 hover:bg-slate-50 transition"
+          >
             <RefreshCw size={16} />
           </button>
         </div>
       </div>
+
       {syncStatus && (
-        <div className="mt-3">
+        <div>
           <Notice tone="info">{syncStatus}</Notice>
         </div>
       )}
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+
+      {/* Stats Counter Cards */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          ["Participants", stats.total_participants],
-          ["Recordings", stats.total_recordings],
-          ["Completed", stats.completed_recordings],
-          ["Failed", stats.failed_recordings]
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-slate-200 bg-white p-4">
-            <p className="text-sm text-slate-500">{label}</p>
-            <p className="mt-1 text-2xl font-bold">{value}</p>
+          ["Total Participants", stats.total_participants, "👥"],
+          ["Total Recordings", stats.total_recordings, "🎙️"],
+          ["Completed Uploads", stats.completed_recordings, "✅"],
+          ["Failed Uploads", stats.failed_recordings, "⚠️"]
+        ].map(([label, value, icon]) => (
+          <div key={label} className="rounded-2xl border border-purple-100 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between text-slate-500 mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+              <span className="text-lg">{icon}</span>
+            </div>
+            <p className="mt-1 text-3xl font-extrabold text-slate-900">{value}</p>
           </div>
         ))}
       </div>
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 className="flex items-center gap-2 font-bold">
-            <BarChart3 size={18} className="text-teal" />Targets by gender
+
+      {/* Gender Breakdown & Recent Records */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-3xl border border-purple-100 bg-white p-6 shadow-sm">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
+            <BarChart3 size={20} className="text-brand-purple" /> Targets by Gender
           </h2>
+
           {Object.entries(stats.targets || {}).map(([key, target]) => (
             <div key={key} className="mt-4">
-              <div className="flex justify-between text-sm">
-                <span>{genderLabels[key]}</span>
-                <span className="font-semibold">
+              <div className="flex justify-between text-xs sm:text-sm font-semibold text-slate-700 mb-1.5">
+                <span>{genderLabels[key]} ({target.prefix}01–{target.prefix}{target.max})</span>
+                <span className="font-mono text-brand-purple">
                   {stats.per_gender?.[key]?.count || 0} / {target.total_clips} clips
                 </span>
               </div>
-              <div className="mt-2 h-2 rounded-full bg-slate-100">
+              <div className="h-3 overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className="h-2 rounded-full bg-teal"
+                  className="h-full rounded-full transition-all"
                   style={{
-                    width: `${Math.min(100, ((stats.per_gender?.[key]?.count || 0) / target.total_clips) * 100)}%`
+                    width: `${Math.min(100, ((stats.per_gender?.[key]?.count || 0) / target.total_clips) * 100)}%`,
+                    background: "linear-gradient(90deg, #2b1154 0%, #7c1a6e 50%, #e11d74 100%)"
                   }}
                 />
               </div>
             </div>
           ))}
-          <p className="mt-5 text-sm text-slate-500">
-            By section: D {stats.per_section?.D || 0} · A {stats.per_section?.A || 0} · N {stats.per_section?.N || 0}
-          </p>
-          <p className="mt-2 text-sm text-slate-500">
-            Environments: {Object.entries(stats.per_environment || {}).map(([key, value]) => `${key} ${value}`).join(" · ")}
-          </p>
-          <p className="mt-2 text-sm text-slate-500">
-            Items: {Object.entries(stats.per_phrase || {}).map(([key, value]) => `${key} ${value}`).join(" · ") || "none"}
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
-            {Object.entries(stats.per_gender_environment || {}).map(([gender, values]) => (
-              <div key={gender}>
-                <span className="font-semibold text-slate-700">{genderLabels[gender]}</span>:{" "}
-                {Object.entries(values).map(([environment, value]) => `${environment} ${value}`).join(" · ")}
-              </div>
-            ))}
+
+          <div className="mt-6 pt-4 border-t border-slate-100 space-y-2 text-xs text-slate-500">
+            <p>
+              <strong>By Section:</strong> Distress (D): {stats.per_section?.D || 0} · Aggressive (A): {stats.per_section?.A || 0} · Normal (N): {stats.per_section?.N || 0}
+            </p>
+            <p>
+              <strong>Environments:</strong> {Object.entries(stats.per_environment || {}).map(([key, value]) => `${key}: ${value}`).join(" · ") || "None"}
+            </p>
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 className="font-bold">Recent recordings</h2>
-          <div className="mt-3 divide-y divide-slate-100">
+
+        <div className="rounded-3xl border border-purple-100 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900 mb-4">Recent Dataset Takes</h2>
+          <div className="divide-y divide-slate-100">
             {stats.recent.slice(0, 8).map((row) => (
-              <div key={row.recording_id} className="flex items-center justify-between py-3 text-sm">
+              <div key={row.recording_id} className="flex items-center justify-between py-3 text-xs sm:text-sm">
                 <div>
-                  <p className="font-semibold">
+                  <p className="font-bold text-slate-800">
                     {row.phrase_id} · {row.participant_id}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     {genderLabels[row.gender_category]} · {row.section_class} · {row.environment} · {row.upload_status}
                   </p>
                 </div>
-                <span className="text-slate-500">{row.duration_seconds ? `${row.duration_seconds}s` : "—"}</span>
+                <span className="font-mono text-xs font-semibold text-slate-500">
+                  {row.duration_seconds ? `${row.duration_seconds}s` : "—"}
+                </span>
               </div>
             ))}
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="mt-16 border-t border-purple-100 bg-white py-12 text-slate-600">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-8 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="SheAlert Logo" className="h-10 w-10 object-contain" />
+            <div>
+              <p className="text-base font-extrabold tracking-tight text-slate-900">
+                SheAlert AI
+              </p>
+              <p className="text-xs text-slate-500">
+                Automatic Women Safety System · Air University Islamabad
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <InstagramPill compact />
+            <a
+              href="mailto:shealertai@gmail.com"
+              className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50/60 px-4 py-2 text-xs font-bold text-brand-purple hover:bg-purple-100 transition"
+            >
+              <Mail size={15} />
+              <span>shealertai@gmail.com</span>
+            </a>
+          </div>
+        </div>
+
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <p>
+            © 2026 SheAlert Research Team · Department of Creative Technologies, Air University.
+          </p>
+          <p>
+            Anonymous audio dataset distributed under <strong className="text-slate-700">CC-BY-4.0</strong> for academic safety research.
+          </p>
+        </div>
+      </div>
+    </footer>
   );
 }
 
@@ -1109,34 +1683,44 @@ export default function App() {
   };
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-slate-50/50 text-slate-800 antialiased selection:bg-brand-pink/20 selection:text-brand-purple">
       <Header onAdmin={() => setScreen("admin")} health={health} />
-      {screen === "admin" ? (
-        <Admin onBack={() => setScreen("participant")} />
-      ) : !content ? (
-        <main className="mx-auto max-w-xl px-4 py-16 text-center">
-          {loadError ? <Notice tone="error">{loadError}</Notice> : <Loader2 className="mx-auto animate-spin text-teal" />}
-        </main>
-      ) : !participant.consent || !started ? (
-        <ParticipantForm
-          participant={participant}
-          setParticipant={setParticipant}
-          pending={pending}
-          onRetryPending={retryPending}
-          environments={content.environments}
-          onContinue={() => setStarted(true)}
-        />
-      ) : (
-        <Session
-          participant={participant}
-          content={content}
-          onDone={() => {
-            setParticipant(initialParticipant);
-            setStarted(false);
-            setPending([]);
-          }}
-        />
-      )}
-    </>
+      <div className="flex-1">
+        {screen === "admin" ? (
+          <Admin onBack={() => setScreen("participant")} />
+        ) : !content ? (
+          <main className="mx-auto max-w-xl px-4 py-24 text-center">
+            {loadError ? (
+              <Notice tone="error">{loadError}</Notice>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="animate-spin text-brand-purple" size={36} />
+                <p className="text-sm font-semibold text-slate-600">Loading SheAlert research session…</p>
+              </div>
+            )}
+          </main>
+        ) : !participant.consent || !started ? (
+          <ParticipantForm
+            participant={participant}
+            setParticipant={setParticipant}
+            pending={pending}
+            onRetryPending={retryPending}
+            environments={content.environments}
+            onContinue={() => setStarted(true)}
+          />
+        ) : (
+          <Session
+            participant={participant}
+            content={content}
+            onDone={() => {
+              setParticipant(initialParticipant);
+              setStarted(false);
+              setPending([]);
+            }}
+          />
+        )}
+      </div>
+      <Footer />
+    </div>
   );
 }
