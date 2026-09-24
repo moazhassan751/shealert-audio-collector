@@ -155,10 +155,11 @@ class DatasetStore:
                             "Drive upload skipped/failed for recording_id=%s: %s. Local audio is safely stored.",
                             fields.recording_id, drive_exc
                         )
+                upload_status = "SAVED_LOCAL_DRIVE_PENDING" if drive_error else "COMPLETED"
                 record.update({
                     "google_drive_file_id": drive_file_id or "",
                     "google_drive_folder_path": folder_path,
-                    "upload_status": "UPLOADED" if drive_file_id else ("SAVED_LOCAL_DRIVE_PENDING" if drive_error else "SAVED_LOCAL"),
+                    "upload_status": upload_status,
                 })
                 if drive_error:
                     record["drive_error"] = drive_error[:500]
@@ -168,12 +169,12 @@ class DatasetStore:
                         self.sheets.append(record)
                     except Exception as sheet_exc:
                         logger.warning("Sheet append failed: %s", sheet_exc)
-                record["upload_status"] = "COMPLETED"
+                record["upload_status"] = upload_status
                 records[fields.recording_id] = record
                 self._write_registry(records)
                 self._upsert_csv(record)
-                logger.info("recording_id=%s participant_id=%s gender=%s phrase=%s status=COMPLETED drive_file_id=%s",
-                            fields.recording_id, fields.participant_id, bucket, fields.phrase_id, drive_file_id)
+                logger.info("recording_id=%s participant_id=%s gender=%s phrase=%s status=%s drive_file_id=%s",
+                            fields.recording_id, fields.participant_id, bucket, fields.phrase_id, upload_status, drive_file_id)
                 return record
             except Exception as exc:
                 record["upload_status"] = "FAILED"
@@ -188,7 +189,7 @@ class DatasetStore:
             record = self._read_registry().get(recording_id)
             if not record:
                 raise KeyError(recording_id)
-            if record.get("status") == "COMPLETED" or record.get("upload_status") == "COMPLETED":
+            if record.get("upload_status") == "COMPLETED" and record.get("google_drive_file_id"):
                 return record
             fields = RecordingFields(
                 recording_id=record["recording_id"], participant_id=record["participant_id"],
@@ -204,6 +205,46 @@ class DatasetStore:
             bucket = BUCKETS[fields.gender_category.value]
             original_path = self.dataset_root / "originals" / bucket / record["original_filename"]
             return self.process(fields, original_path)
+
+    def sync_drive_pending(self) -> dict[str, Any]:
+        if not self.drive:
+            raise RuntimeError("Google Drive integration is not connected. Please re-authenticate Google Drive.")
+        with self.lock:
+            records = self._read_registry()
+            synced = []
+            failed = []
+            for rid, rec in records.items():
+                if rec.get("google_drive_file_id"):
+                    continue
+                bucket = rec.get("gender_category", "unspecified")
+                std_name = rec.get("standardized_filename")
+                orig_name = rec.get("original_filename")
+                std_path = self.dataset_root / "audio" / bucket / std_name if std_name else None
+                orig_path = self.dataset_root / "originals" / bucket / orig_name if orig_name else None
+                if not std_path or not std_path.exists():
+                    continue
+                try:
+                    drive_id = self.drive.upload_verified(std_path, std_name, bucket)
+                    if orig_path and orig_path.exists():
+                        self.drive.upload_verified(orig_path, orig_name, bucket, originals=True)
+                    rec["google_drive_file_id"] = drive_id
+                    rec["google_drive_folder_path"] = f"SheAlert_Dataset/audio/{bucket}"
+                    rec["upload_status"] = "COMPLETED"
+                    rec.pop("drive_error", None)
+                    rec.pop("error", None)
+                    self._upsert_csv(rec)
+                    if self.sheets:
+                        try:
+                            self.sheets.append(rec)
+                        except Exception as sheet_exc:
+                            logger.warning("Sheet append failed: %s", sheet_exc)
+                    synced.append({"recording_id": rid, "filename": std_name, "drive_file_id": drive_id})
+                except Exception as exc:
+                    rec["drive_error"] = str(exc)[:500]
+                    rec["upload_status"] = "SAVED_LOCAL_DRIVE_PENDING"
+                    failed.append({"recording_id": rid, "filename": std_name, "error": str(exc)})
+            self._write_registry(records)
+            return {"synced_count": len(synced), "failed_count": len(failed), "synced": synced, "failed": failed}
 
     def _upsert_csv(self, record: dict[str, Any]) -> None:
         rows = self.metadata()

@@ -76,7 +76,12 @@ def admin_required(x_admin_token: str | None = Header(default=None)) -> None:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok", "storage": "google-drive+local" if drive else "local", "phrases": len(phrases)}
+    return {
+        "status": "ok",
+        "storage": "google-drive+local" if drive else "local",
+        "google_drive_connected": drive is not None,
+        "phrases": len(phrases),
+    }
 
 
 @app.get("/api/phrases")
@@ -170,12 +175,22 @@ def export_metadata(_: None = Depends(admin_required)) -> StreamingResponse:
 def retry_failed(_: None = Depends(admin_required)) -> dict:
     results = []
     for record in store.list_records():
-        if record.get("upload_status") == "FAILED":
+        if record.get("upload_status") in ("FAILED", "SAVED_LOCAL_DRIVE_PENDING") or not record.get("google_drive_file_id"):
             try:
                 results.append(store.retry_failed(record["recording_id"]))
             except Exception as exc:
                 results.append({"recording_id": record["recording_id"], "upload_status": "FAILED", "error": str(exc)})
     return {"results": results}
+
+
+@app.post("/api/admin/sync-drive")
+def sync_drive(_: None = Depends(admin_required)) -> dict:
+    if not drive:
+        raise HTTPException(
+            status_code=503,
+            detail="Google Drive is not connected. Please re-authenticate using 'python scripts/setup_google_drive_oauth.py'."
+        )
+    return store.sync_drive_pending()
 
 
 @app.post("/api/recordings", response_model=RecordingResult)

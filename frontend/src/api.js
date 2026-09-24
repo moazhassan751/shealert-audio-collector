@@ -1,5 +1,15 @@
 const API = import.meta.env.VITE_API_URL || "";
 
+export async function getHealth() {
+  try {
+    const response = await fetch(`${API}/api/health`);
+    if (!response.ok) return { status: "offline", storage: "offline", google_drive_connected: false };
+    return response.json();
+  } catch {
+    return { status: "offline", storage: "offline", google_drive_connected: false };
+  }
+}
+
 export async function getPhrases() {
   const response = await fetch(`${API}/api/phrases`);
   if (!response.ok) throw new Error("Unable to load phrases.");
