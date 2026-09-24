@@ -246,6 +246,79 @@ class DatasetStore:
             self._write_registry(records)
             return {"synced_count": len(synced), "failed_count": len(failed), "synced": synced, "failed": failed}
 
+    def sync_from_drive(self) -> int:
+        if not self.drive:
+            return 0
+        with self.lock:
+            records = self._read_registry()
+            try:
+                q = "name contains 'SHEA_' and trashed = false"
+                res = self.drive.service.files().list(
+                    q=q, fields="files(id, name)", pageSize=1000, **self.drive._list_params()
+                ).execute()
+                files = res.get("files", [])
+                added = 0
+                for f in files:
+                    fname = f.get("name", "")
+                    fid = f.get("id", "")
+                    m = re.match(r"^SHEA_([FMU])(\d{3})_([DAN])_([A-Za-z0-9_-]+)_(R\d{2})_(E\d{2})", fname)
+                    if not m or not fname.endswith(".wav"):
+                        continue
+                    prefix, num_str, sec_class, word_code, take_code, env_code = m.groups()
+                    part_id = f"{prefix}{int(num_str):02d}"
+                    gender = "female" if prefix == "F" else ("male" if prefix == "M" else "unspecified")
+
+                    existing = next(
+                        (r for r in records.values() if r.get("participant_id") == part_id
+                         and r.get("section_class") == sec_class
+                         and r.get("phrase_id") == word_code
+                         and r.get("take_code") == take_code), None
+                    )
+                    if existing:
+                        if not existing.get("google_drive_file_id"):
+                            existing["google_drive_file_id"] = fid
+                            existing["upload_status"] = "COMPLETED"
+                        continue
+
+                    rec = {
+                        "recording_id": f"drive-{fid[:20]}",
+                        "volunteer_id": part_id,
+                        "participant_id": part_id,
+                        "gender_category": gender,
+                        "class": sec_class,
+                        "section_class": sec_class,
+                        "phrase_id": word_code,
+                        "word_code": word_code,
+                        "phrase_text": word_code,
+                        "translation": "",
+                        "category": "Distress" if sec_class == "D" else ("Aggression" if sec_class == "A" else "Everyday"),
+                        "take_code": take_code,
+                        "take_number": int(take_code[1:]),
+                        "recording_number": 1,
+                        "environment": f"E{int(env_code[1:])}",
+                        "environment_code": env_code,
+                        "environment_name": "",
+                        "content_gender": gender,
+                        "age_group": "",
+                        "native_language": "Urdu",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "original_filename": fname.replace(".wav", ".webm"),
+                        "standardized_filename": fname,
+                        "upload_status": "COMPLETED",
+                        "google_drive_file_id": fid,
+                        "google_drive_folder_path": f"SheAlert_Dataset/audio/{gender}",
+                    }
+                    records[rec["recording_id"]] = rec
+                    self._upsert_csv(rec)
+                    added += 1
+                if added > 0:
+                    self._write_registry(records)
+                    logger.info("Synchronized %d recordings from Google Drive into local database", added)
+                return added
+            except Exception as exc:
+                logger.warning("Error syncing records from Drive: %s", exc)
+                return 0
+
     def _upsert_csv(self, record: dict[str, Any]) -> None:
         rows = self.metadata()
         replacement = {key: record.get(key, "") for key in CSV_FIELDS}

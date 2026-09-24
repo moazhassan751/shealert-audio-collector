@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import logging
+import re
 import secrets
 import shutil
 import time
@@ -64,6 +65,11 @@ if settings.google_drive_root_folder_id:
     except Exception:
         logger.exception("Google integration disabled; local storage remains active")
 store = DatasetStore(settings, drive, sheets)
+if drive:
+    try:
+        store.sync_from_drive()
+    except Exception as sync_exc:
+        logger.warning("Initial drive sync failed: %s", sync_exc)
 app = FastAPI(title="SheAlert Audio Dataset API", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=settings.origins, allow_credentials=False,
                    allow_methods=["*"], allow_headers=["*"])
@@ -95,6 +101,31 @@ def get_session_content() -> dict:
 
 
 active_reservations: dict[str, float] = {}
+drive_used_ids_cache: set[str] = set()
+last_drive_check: float = 0.0
+
+
+def get_drive_used_ids() -> set[str]:
+    global drive_used_ids_cache, last_drive_check
+    now = time.time()
+    if drive and (now - last_drive_check > 60.0 or not drive_used_ids_cache):
+        try:
+            q = "name contains 'SHEA_' and trashed = false"
+            res = drive.service.files().list(
+                q=q, fields="files(name)", pageSize=1000, **drive._list_params()
+            ).execute()
+            ids = set()
+            for f in res.get("files", []):
+                m = re.match(r"^SHEA_([FMU])(\d{2,3})_", f.get("name", ""))
+                if m:
+                    prefix, num = m.group(1), int(m.group(2))
+                    ids.add(f"{prefix}{num:02d}")
+                    ids.add(f"{prefix}{num:03d}")
+            drive_used_ids_cache = ids
+            last_drive_check = now
+        except Exception as exc:
+            logger.warning("Drive ID check error: %s", exc)
+    return drive_used_ids_cache
 
 
 @app.get("/api/next-participant-id")
@@ -104,6 +135,7 @@ def get_next_participant_id(gender: str) -> dict:
         raise HTTPException(status_code=400, detail="Invalid gender")
     prefix = {"female": "F", "male": "M", "unspecified": "U"}[gender]
     max_num = {"female": 75, "male": 20, "unspecified": 99}[gender]
+    start_num = getattr(settings, f"starting_{gender}_id", 1)
 
     now = time.time()
     for pid in list(active_reservations.keys()):
@@ -120,17 +152,26 @@ def get_next_participant_id(gender: str) -> dict:
                 used_ids.add(f"{prefix}{int(pid[1:]):02d}")
                 used_ids.add(f"{prefix}{int(pid[1:]):03d}")
 
+    # Incorporate IDs discovered directly from Google Drive
+    used_ids.update(get_drive_used_ids())
+
     reserved_set = set(active_reservations.keys())
 
-    for num in range(1, max_num + 1):
+    for num in range(start_num, max_num + 1):
         formatted_id = f"{prefix}{num:02d}"
         if formatted_id not in used_ids and formatted_id not in reserved_set:
             active_reservations[formatted_id] = now + (30 * 60)
             return {"participant_id": formatted_id, "available": True}
 
-    for num in range(1, max_num + 1):
+    for num in range(start_num, max_num + 1):
         formatted_id = f"{prefix}{num:02d}"
         if formatted_id not in used_ids:
+            return {"participant_id": formatted_id, "available": True}
+
+    for num in range(1, start_num):
+        formatted_id = f"{prefix}{num:02d}"
+        if formatted_id not in used_ids and formatted_id not in reserved_set:
+            active_reservations[formatted_id] = now + (30 * 60)
             return {"participant_id": formatted_id, "available": True}
 
     return {"participant_id": f"{prefix}{max_num:02d}", "available": False, "message": "All slots are filled"}
@@ -190,6 +231,7 @@ def sync_drive(_: None = Depends(admin_required)) -> dict:
             status_code=503,
             detail="Google Drive is not connected. Please re-authenticate using 'python scripts/setup_google_drive_oauth.py'."
         )
+    store.sync_from_drive()
     return store.sync_drive_pending()
 
 
@@ -262,6 +304,12 @@ async def upload_recording(
                     raise HTTPException(status_code=413, detail="Recording exceeds the upload size limit")
                 handle.write(chunk)
         record = store.process(fields, temporary)
+        drive_used_ids_cache.add(fields.participant_id)
+        if fields.participant_id[1:].isdigit():
+            pref = fields.participant_id[0]
+            num_val = int(fields.participant_id[1:])
+            drive_used_ids_cache.add(f"{pref}{num_val:02d}")
+            drive_used_ids_cache.add(f"{pref}{num_val:03d}")
         return RecordingResult(recording_id=fields.recording_id, status="COMPLETED",
                                message="Recording submitted successfully.",
                                original_filename=record.get("original_filename"),

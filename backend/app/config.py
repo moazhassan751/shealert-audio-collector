@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     google_sheet_id: str | None = None
     google_drive_shared_drive_id: str | None = None
     google_drive_required: bool = False
+    starting_female_id: int = 7
+    starting_male_id: int = 8
+    starting_unspecified_id: int = 1
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
