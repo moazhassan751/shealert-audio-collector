@@ -15,7 +15,7 @@ class AdminLogin(BaseModel):
 
 class RecordingFields(BaseModel):
     recording_id: str = Field(min_length=8, max_length=80, pattern=r"^[A-Za-z0-9_-]+$")
-    participant_id: str = Field(min_length=2, max_length=4)
+    participant_id: str = Field(min_length=2, max_length=12)
     age_group: str = Field(min_length=1, max_length=30)
     gender_category: GenderCategory
     native_language: str = Field(min_length=1, max_length=60)
@@ -30,7 +30,7 @@ class RecordingFields(BaseModel):
     loudness: str = Field(default="", max_length=20)
     environment_name: str = Field(default="", max_length=60)
     content_gender: str = Field(default="female", pattern=r"^(female|male)$")
-    recording_number: int = Field(ge=1, le=30)
+    recording_number: int = Field(ge=1, le=100)
     consent: bool
     mime_type: str = Field(default="audio/webm", max_length=100)
 
@@ -38,17 +38,13 @@ class RecordingFields(BaseModel):
     @classmethod
     def clean_participant_id(cls, value: str) -> str:
         value = value.strip().upper()
-        match = re.fullmatch(r"([FMU])(\d{2,3})", value)
+        match = re.fullmatch(r"([FMU])(\d+)", value)
         if not match:
-            raise ValueError("Participant ID must use F01-F75, M01-M20, or U01-U99.")
+            raise ValueError("Participant ID must start with F, M, or U followed by a number.")
         prefix, number = match.groups()
         number_value = int(number)
-        if prefix == "M" and not 1 <= number_value <= 20:
-            raise ValueError("Male volunteer IDs must be M01-M20.")
-        if prefix == "F" and not 1 <= number_value <= 75:
-            raise ValueError("Female volunteer IDs must be F01-F75.")
-        if prefix == "U" and not 1 <= number_value <= 99:
-            raise ValueError("Unspecified volunteer IDs must be U01-U99.")
+        if number_value < 1:
+            raise ValueError("Volunteer ID number must be positive (>= 1).")
         return f"{prefix}{number_value:02d}"
 
     @field_validator("consent")

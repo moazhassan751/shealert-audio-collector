@@ -8,7 +8,7 @@
     "E6": "Car"
   },
   "female": {
-    "volunteer_ids": {"prefix": "F", "min": 1, "max": 75},
+    "volunteer_ids": {"prefix": "F", "min": 1},
     "clips": 20,
     "approx_time": "~10 minutes",
     "sections": [
@@ -64,7 +64,7 @@
     ]
   },
   "male": {
-    "volunteer_ids": {"prefix": "M", "min": 1, "max": 20},
+    "volunteer_ids": {"prefix": "M", "min": 1},
     "clips": 30,
     "approx_time": "~15 minutes",
     "sections": [

@@ -5,6 +5,7 @@ import logging
 import re
 import secrets
 import shutil
+import threading
 import time
 from pathlib import Path
 
@@ -103,6 +104,7 @@ def get_session_content() -> dict:
 active_reservations: dict[str, float] = {}
 drive_used_ids_cache: set[str] = set()
 last_drive_check: float = 0.0
+reservation_lock = threading.Lock()
 
 
 def get_drive_used_ids() -> set[str]:
@@ -111,21 +113,79 @@ def get_drive_used_ids() -> set[str]:
     if drive and (now - last_drive_check > 60.0 or not drive_used_ids_cache):
         try:
             q = "name contains 'SHEA_' and trashed = false"
-            res = drive.service.files().list(
-                q=q, fields="files(name)", pageSize=1000, **drive._list_params()
-            ).execute()
             ids = set()
-            for f in res.get("files", []):
-                m = re.match(r"^SHEA_([FMU])(\d{2,3})_", f.get("name", ""))
-                if m:
-                    prefix, num = m.group(1), int(m.group(2))
-                    ids.add(f"{prefix}{num:02d}")
-                    ids.add(f"{prefix}{num:03d}")
+            page_token = None
+            while True:
+                params = drive._list_params()
+                if page_token:
+                    params["pageToken"] = page_token
+                res = drive.service.files().list(
+                    q=q, fields="nextPageToken, files(name)", pageSize=1000, **params
+                ).execute()
+                for f in res.get("files", []):
+                    m = re.match(r"^SHEA_([FMU])(\d+)_", f.get("name", ""))
+                    if m:
+                        prefix, num = m.group(1), int(m.group(2))
+                        ids.add(f"{prefix}{num:02d}")
+                        ids.add(f"{prefix}{num:03d}")
+                        ids.add(f"{prefix}{num}")
+                page_token = res.get("nextPageToken")
+                if not page_token:
+                    break
             drive_used_ids_cache = ids
             last_drive_check = now
         except Exception as exc:
             logger.warning("Drive ID check error: %s", exc)
     return drive_used_ids_cache
+
+
+def get_all_used_numbers(prefix: str) -> set[int]:
+    used_numbers: set[int] = set()
+
+    # 1. Local records registry (records.json)
+    try:
+        for rec in store.list_records():
+            pid = (rec.get("participant_id") or "").strip().upper()
+            if pid.startswith(prefix) and pid[1:].isdigit():
+                used_numbers.add(int(pid[1:]))
+    except Exception as exc:
+        logger.warning("Error reading registry for used IDs: %s", exc)
+
+    # 2. metadata.csv
+    csv_file = settings.data_root / "metadata" / "metadata.csv"
+    if csv_file.exists():
+        try:
+            with csv_file.open(mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    pid = (row.get("participant_id") or "").strip().upper()
+                    if pid.startswith(prefix) and pid[1:].isdigit():
+                        used_numbers.add(int(pid[1:]))
+        except Exception as exc:
+            logger.warning("Error reading metadata.csv for used IDs: %s", exc)
+
+    # 3. Audio & original files on disk
+    for sub in ("audio", "originals"):
+        target_dir = settings.data_root / sub
+        if target_dir.exists():
+            try:
+                for p in target_dir.rglob(f"SHEA_{prefix}*.*"):
+                    m = re.match(rf"^SHEA_{prefix}(\d+)_", p.name)
+                    if m:
+                        used_numbers.add(int(m.group(1)))
+            except Exception as exc:
+                logger.warning("Error reading local dataset files for used IDs: %s", exc)
+
+    # 4. Google Drive files
+    try:
+        drive_ids = get_drive_used_ids()
+        for did in drive_ids:
+            if did.startswith(prefix) and did[1:].isdigit():
+                used_numbers.add(int(did[1:]))
+    except Exception as exc:
+        logger.warning("Error reading Drive used IDs: %s", exc)
+
+    return used_numbers
 
 
 @app.get("/api/next-participant-id")
@@ -134,47 +194,29 @@ def get_next_participant_id(gender: str) -> dict:
     if gender not in {"female", "male", "unspecified"}:
         raise HTTPException(status_code=400, detail="Invalid gender")
     prefix = {"female": "F", "male": "M", "unspecified": "U"}[gender]
-    max_num = {"female": 75, "male": 20, "unspecified": 99}[gender]
     start_num = getattr(settings, f"starting_{gender}_id", 1)
 
     now = time.time()
-    for pid in list(active_reservations.keys()):
-        if active_reservations[pid] < now:
-            del active_reservations[pid]
+    with reservation_lock:
+        # Clean expired reservations
+        for pid in list(active_reservations.keys()):
+            if active_reservations[pid] < now:
+                del active_reservations[pid]
 
-    records = store.list_records()
-    used_ids: set[str] = set()
-    for rec in records:
-        pid = (rec.get("participant_id") or "").strip().upper()
-        if pid:
-            used_ids.add(pid)
-            if pid.startswith(prefix) and pid[1:].isdigit():
-                used_ids.add(f"{prefix}{int(pid[1:]):02d}")
-                used_ids.add(f"{prefix}{int(pid[1:]):03d}")
+        used_numbers = get_all_used_numbers(prefix)
+        reserved_numbers = {
+            int(pid[1:]) for pid, exp in active_reservations.items()
+            if pid.startswith(prefix) and pid[1:].isdigit() and exp >= now
+        }
 
-    # Incorporate IDs discovered directly from Google Drive
-    used_ids.update(get_drive_used_ids())
+        # Find the lowest available number starting from start_num
+        num = start_num
+        while num in used_numbers or num in reserved_numbers:
+            num += 1
 
-    reserved_set = set(active_reservations.keys())
-
-    for num in range(start_num, max_num + 1):
         formatted_id = f"{prefix}{num:02d}"
-        if formatted_id not in used_ids and formatted_id not in reserved_set:
-            active_reservations[formatted_id] = now + (30 * 60)
-            return {"participant_id": formatted_id, "available": True}
-
-    for num in range(start_num, max_num + 1):
-        formatted_id = f"{prefix}{num:02d}"
-        if formatted_id not in used_ids:
-            return {"participant_id": formatted_id, "available": True}
-
-    for num in range(1, start_num):
-        formatted_id = f"{prefix}{num:02d}"
-        if formatted_id not in used_ids and formatted_id not in reserved_set:
-            active_reservations[formatted_id] = now + (30 * 60)
-            return {"participant_id": formatted_id, "available": True}
-
-    return {"participant_id": f"{prefix}{max_num:02d}", "available": False, "message": "All slots are filled"}
+        active_reservations[formatted_id] = now + (30 * 60)
+        return {"participant_id": formatted_id, "available": True}
 
 
 @app.post("/api/admin/login")
@@ -256,11 +298,11 @@ async def upload_recording(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     prefix = fields.participant_id[0]
     if fields.gender_category.value == "female" and prefix != "F":
-        raise HTTPException(status_code=422, detail="Female volunteers must use an F01-F75 ID.")
+        raise HTTPException(status_code=422, detail="Female volunteers must use an F-prefixed ID.")
     if fields.gender_category.value == "male" and prefix != "M":
-        raise HTTPException(status_code=422, detail="Male volunteers must use an M01-M20 ID.")
+        raise HTTPException(status_code=422, detail="Male volunteers must use an M-prefixed ID.")
     if fields.gender_category.value == "unspecified" and prefix != "U":
-        raise HTTPException(status_code=422, detail="Unspecified volunteers must use a U01-U99 ID.")
+        raise HTTPException(status_code=422, detail="Unspecified volunteers must use a U-prefixed ID.")
     content_gender = "male" if fields.gender_category.value == "male" else "female"
     expected = phrase_lookup.get((content_gender, fields.phrase_id, fields.take_code, fields.section_class))
     if not expected:

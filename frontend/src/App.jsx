@@ -43,10 +43,10 @@ const classLabels = { D: "Distress", A: "Stern / Aggressive Lines", N: "Everyday
 function isValidParticipantId(value, gender) {
   const prefix = { female: "F", male: "M", unspecified: "U" }[gender];
   if (!prefix) return false;
-  const match = value.trim().toUpperCase().match(new RegExp(`^${prefix}(\\d{2,3})$`));
+  const match = value.trim().toUpperCase().match(new RegExp(`^${prefix}(\\d+)$`));
   if (!match) return false;
   const number = Number(match[1]);
-  return gender === "female" ? number >= 1 && number <= 75 : gender === "male" ? number >= 1 && number <= 20 : number >= 1 && number <= 99;
+  return number >= 1;
 }
 
 export function InstagramPill({ className = "", compact = false }) {
@@ -227,7 +227,7 @@ function ParticipantForm({ participant, setParticipant, onContinue, pending, onR
 
   const validId = isValidParticipantId(participant.participant_id, participant.gender_category);
   const valid = validId && participant.gender_category && participant.consent;
-  const idHint = participant.gender_category === "male" ? "M01–M20" : participant.gender_category === "female" ? "F01–F75" : participant.gender_category === "unspecified" ? "U01–U99" : "F01–F75, M01–M20, or U01–U99";
+  const idHint = participant.gender_category === "male" ? "M-Series (e.g. M08, M14)" : participant.gender_category === "female" ? "F-Series (e.g. F07, F18)" : "U-Series (e.g. U01, U02)";
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 sm:py-10 space-y-8">
@@ -336,7 +336,7 @@ function ParticipantForm({ participant, setParticipant, onContinue, pending, onR
             <div className="rounded-2xl border border-pink-200/80 bg-gradient-to-br from-pink-50/70 via-rose-50/40 to-white p-5 sm:p-6 shadow-sm transition hover:shadow-md">
               <div className="flex items-center justify-between mb-3">
                 <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-extrabold text-brand-pink border border-pink-200">
-                  Target: 75 Volunteers (F01–F75)
+                  Target: 75+ Female Volunteers (F-Series)
                 </span>
                 <span className="text-2xl">👩</span>
               </div>
@@ -358,7 +358,7 @@ function ParticipantForm({ participant, setParticipant, onContinue, pending, onR
             <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-br from-purple-50/70 via-indigo-50/40 to-white p-5 sm:p-6 shadow-sm transition hover:shadow-md">
               <div className="flex items-center justify-between mb-3">
                 <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-extrabold text-brand-purple border border-purple-200">
-                  Target: 20 Volunteers (M01–M20)
+                  Target: 20+ Male Volunteers (M-Series)
                 </span>
                 <span className="text-2xl">👨</span>
               </div>
@@ -475,7 +475,7 @@ function ParticipantForm({ participant, setParticipant, onContinue, pending, onR
                 <div className="flex items-center justify-between">
                   <p className="font-bold text-slate-900">Female Voice</p>
                   <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[11px] font-extrabold text-brand-pink">
-                    F01 – F75
+                    F-Series (F01, F02…)
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-slate-500 leading-relaxed">
@@ -500,7 +500,7 @@ function ParticipantForm({ participant, setParticipant, onContinue, pending, onR
                 <div className="flex items-center justify-between">
                   <p className="font-bold text-slate-900">Male Voice</p>
                   <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-extrabold text-brand-purple">
-                    M01 – M20
+                    M-Series (M01, M02…)
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-slate-500 leading-relaxed">
